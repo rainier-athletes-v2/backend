@@ -1,5 +1,5 @@
 import express from 'express';
-import mongoose from 'mongoose';
+// import mongoose from 'mongoose';
 import cors from 'cors';
 import HttpError from 'http-errors';
 import logger from './logger';
@@ -9,7 +9,7 @@ import errorMiddleware from './middleware/error-middleware';
 import loggerMiddleware from './middleware/logger-middleware';
 
 // our routes
-import googleOauthRouter from '../router/google-oauth-router';
+import sfOauthRouter from '../router/sf-oauth-router';
 import profileRouter from '../router/profile-router';
 import pointTrackerRouter from '../router/point-tracker-router';
 import synopsisRouter from '../router/synopsis-router';
@@ -44,7 +44,7 @@ app.use(express.json());
 
 // our own api routers or middleware
 app.use(loggerMiddleware);
-app.use(googleOauthRouter);
+app.use(sfOauthRouter);
 app.use(profileRouter);
 app.use(studentDataRouter);
 app.use(pointTrackerRouter);
@@ -60,25 +60,25 @@ app.all('*', (request, response, next) => {
 app.use(errorMiddleware);
 
 const startServer = () => {
-  return mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true })
-    .then(() => {
+  // return mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true })
+  //   .then(() => {
       server = app.listen(PORT, () => {
         console.log(`Server up on port ${PORT}`);
       });
-    })
-    .catch((err) => {
-      throw err;
-    });
+    // })
+    // .catch((err) => {
+    //   throw err;
+    // });
 };
 
 const stopServer = () => {
-  return mongoose.disconnect()
-    .then(() => {
+  // return mongoose.disconnect()
+  //   .then(() => {
       server.close();
-    })
-    .catch((err) => {
-      throw err;
-    });
+    // })
+    // .catch((err) => {
+    //   throw err;
+    // });
 };
 
 export { startServer, stopServer };
