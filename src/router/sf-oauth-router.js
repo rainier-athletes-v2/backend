@@ -5,49 +5,79 @@ import jwt from 'jsonwebtoken';
 import Profile from '../model/profile';
 import logger from '../lib/logger';
 
-const GOOGLE_OAUTH_URL = 'https://www.googleapis.com/oauth2/v4/token';
+// const SF_OAUTH_URL = 'https://login.salesforce.com/services/oauth2/token';
 
 require('dotenv').config();
 
-const googleOAuthRouter = new Router();
+const sfOAuthRouter = new Router();
 
-googleOAuthRouter.get('/api/v1/oauth/google', async (request, response, next) => {
+sfOAuthRouter.get('/api/v2/oauth/sf', async (request, response, next) => {
   if (!request.query.code) {
     response.redirect(process.env.CLIENT_URL);
-    return next(new HttpErrors(500, 'Google OAuth Code Error'));
+    return next(new HttpErrors(500, 'Salesforce OAuth Code Error'));
   }
+  console.log(`|${request.query.code}|`);
 
-  let googleTokenResponse;
+  // const code = request.query.code.slice(0, request.query.code.length - 2);
+  // console.log(`|${code}|`);
+
+  const temp = {
+    code: request.query.code,
+    access_type: 'offline',
+    grant_type: 'authorization_code',
+    client_id: process.env.SF_OAUTH_ID,
+    // client_secret: process.env.SF_OAUTH_SECRET,
+    redirect_uri: `${process.env.API_URL}/oauth/sf`,
+  };
+  console.log(temp);
+
+  let sfTokenResponse;
   try {
-    googleTokenResponse = await superagent.post(GOOGLE_OAUTH_URL)
+    sfTokenResponse = await superagent.post(process.env.SF_OAUTH_TOKEN_URL)
       .type('form')
       .send({
         code: request.query.code,
-        access_type: 'offline',
+        // access_type: 'offline',
         grant_type: 'authorization_code',
-        client_id: process.env.GOOGLE_OAUTH_ID,
-        client_secret: process.env.GOOGLE_OAUTH_SECRET,
-        redirect_uri: `${process.env.API_URL}/oauth/google`,
+        client_id: process.env.SF_OAUTH_ID,
+        // client_secret: process.env.SF_OAUTH_SECRET,
+        redirect_uri: `${process.env.API_URL}/oauth/sf`,
       });
   } catch (err) {
-    return next(new HttpErrors(err.status, 'Error from Google Oauth error fetching authorization tokens'));
+    console.error(err);
+    return next(new HttpErrors(err.status, 'Error from Salesforce Oauth error fetching authorization tokens', { expose: false }));
   }
 
-  if (!googleTokenResponse.body.access_token) {
+  console.log('sfTokenResponse', sfTokenResponse.body);
+  
+  if (!sfTokenResponse.body.access_token) {
     logger.log(logger.ERROR, 'No Token from Google');
     return response.redirect(process.env.CLIENT_URL);
   }
 
-  const goggleUserInfo = jwt.decode(googleTokenResponse.body.id_token);
-  const { email } = goggleUserInfo;
-  const firstName = goggleUserInfo.given_name;
-  const lastName = goggleUserInfo.family_name;
-  const { picture } = goggleUserInfo;
+  const { access_token, id_token, signature, id, instance_url } = sfTokenResponse.body;
+
+  const sfUserInfo = jwt.decode(id_token);
+  console.log('sfUserInfo decode', sfUserInfo);
+  const {
+    email, 
+    picture, 
+    sub,  
+    nickname,
+  } = sfUserInfo;
+  const sfProfile = sfUserInfo.profile;
+  const firstName = sfUserInfo.given_name;
+  const lastName = sfUserInfo.family_name;
 
   // at this point Oauth is complete. Now we need to see they are
   // in the profile collection
+  let profile;
+  try {
+    profile = await superagent.get(sfProfile)
+  } catch (err) {
+    return next(new HttpErrors(err.status, `Error retrieving profile from ${sfProfile}`, { expose: false }));
+  }
 
-  let profile = await Profile.findOne({ primaryEmail: email });
 
   if (!profile) {
     // user not in profile collection, check process.env.ROOT_ADMIN
@@ -77,9 +107,9 @@ googleOAuthRouter.get('/api/v1/oauth/google', async (request, response, next) =>
   }
   logger.log(logger.INFO, 'Profile validated');
 
-  // this call returns a jwt with profileId and google tokens
+  // this call returns a jwt with profileId and sf tokens
   // as payload
-  const raToken = await profile.createTokenPromise(googleTokenResponse.body);
+  const raToken = await profile.createTokenPromise(sfTokenResponse.body);
 
   // send raToken as cookie and in response json
   const firstDot = process.env.CLIENT_URL.indexOf('.');
@@ -92,4 +122,4 @@ googleOAuthRouter.get('/api/v1/oauth/google', async (request, response, next) =>
   return response.redirect(`${process.env.CLIENT_URL}#GET-TOKEN`);
 });
 
-export default googleOAuthRouter;
+export default sfOAuthRouter;
