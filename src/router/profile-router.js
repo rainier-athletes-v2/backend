@@ -90,17 +90,21 @@ profileRouter.get('/api/v1/profiles', bearerAuthMiddleware, (request, response, 
   return undefined;
 });
 
-profileRouter.get('/api/v1/profiles/me', bearerAuthMiddleware, (request, response, next) => {
-  Profile.init()
-    .then(() => {
-      Profile.findById(request.profile._id.toString())
-        .then((profile) => {
-          return response.json(profile);
-        });
-      return undefined;
-    })
-    .catch(next);
-  return undefined;
+profileRouter.get('/api/v2/profiles/me', bearerAuthMiddleware, (request, response, next) => {
+  if (request.profile) {
+    return response.json(request.profile);
+  }
+  return next(new HttpErrors(500, 'User profile missing from request.', { expose: false }));
+  // Profile.init()
+  //   .then(() => {
+  //     Profile.findById(request.profile._id.toString())
+  //       .then((profile) => {
+  //         return response.json(profile);
+  //       });
+  //     return undefined;
+  //   })
+  //   .catch(next);
+  // return undefined;
 });
 
 profileRouter.get('/api/v1/profiles/myStudents', bearerAuthMiddleware, (request, response, next) => {
