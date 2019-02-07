@@ -94,7 +94,8 @@ sfOAuthRouter.get('/api/v2/oauth/sf', async (request, response, next) => {
     userUrl,
     firstName: idResponse.body.first_name,
     lastName: idResponse.body.last_name,
-    
+    isMentor: contactResponse.body.Mentor__c,
+    isStaff: contactResponse.body.Staff__c,
   };
   console.log('raTokenPayload', raTokenPayload);
   

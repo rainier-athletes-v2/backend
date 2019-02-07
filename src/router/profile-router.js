@@ -93,7 +93,15 @@ profileRouter.get('/api/v1/profiles', bearerAuthMiddleware, (request, response, 
 
 profileRouter.get('/api/v2/profiles/me', bearerAuthMiddleware, (request, response, next) => {
   if (request.profile) {
-    return response.json(request.profile);
+    return response.json(
+      {
+        firstName: request.profile.firstName,
+        lastName: request.profile.lastName,
+        role: request.profile.role,
+        isMentor: request.profile.isMentor,
+        isStaff: request.profile.isStaff,
+      },
+    );
   }
   return next(new HttpErrors(500, 'User profile missing from request.', { expose: false }));
 });
@@ -109,6 +117,7 @@ profileRouter.get('/api/v2/profiles/myStudents', bearerAuthMiddleware, async (re
     } = request.profile;
 
     const myStudentsQuery = `?q=select+name,+(select+npe4__RelatedContact__c,+npe4__Type__c,+npe4__Status__c+from+npe4__Relationships__r)+from+contact+where+id+=+'${contactId}'`;
+    const classScheduleQuery = '?q=select+name,+id,+(select+Class__c+from+Class_Schedules__r)+from+Contact+where+Id+=';
 
     let related;
     try {
@@ -127,33 +136,54 @@ profileRouter.get('/api/v2/profiles/myStudents', bearerAuthMiddleware, async (re
     const studentIds = contacts.map(contact => (contact.npe4__Status__c === 'Current' 
       && contact.npe4__Type__c === 'Student' 
       && contact.npe4__RelatedContact__c));
-    console.log('student contact ids', studentIds);
 
     const studentContactPromises = [];
     for (let i = 0; i < studentIds.length; i++) {
-      console.log('pushing', `${sobjectsUrl}Contact/${studentIds[i]}`);
       studentContactPromises.push(
         superagent.get(`${sobjectsUrl}Contact/${studentIds[i]}`).set('Authorization', `Bearer ${accessToken}`),
       );
     }
-    Promise.all(studentContactPromises)
-      .then((results) => {
-        const studentContacts = results.map(result => (
-          {
-            id: result.body.Id, 
-            firstName: result.body.FirstName, 
-            lastName: result.body.LastName, 
-            name: result.body.Name,
-            grade: result.body.Student_Grade__c,
-            schoolId: result.body.Student_ID__c,
-            gender: related.body.Gender__c,
-          }
-        ));
-        console.log('results from gathering student contact records', studentContacts);
-        return response.json(studentContacts);
-      });
+    const studentContactData = await Promise.all(studentContactPromises);
+    const studentContacts = studentContactData.map(result => (
+      {
+        id: result.body.Id, 
+        firstName: result.body.FirstName, 
+        lastName: result.body.LastName, 
+        name: result.body.Name,
+        grade: result.body.Student_Grade__c,
+        schoolId: result.body.Student_ID__c,
+        gender: related.body.Gender__c,
+      }
+    ));
 
-    return response('ERROR RETRIEVING MY STUDENTS').status(400);
+    // get student class schedule info
+    const studentSchedulePromises = [];
+    for (let i = 0; i < studentIds.length; i++) {
+      studentSchedulePromises.push(
+        superagent.get(`${queryUrl}${classScheduleQuery}'${studentIds[i]}'`).set('Authorization', `Bearer ${accessToken}`),
+      );
+    }
+    const studentScheduleData = await Promise.all(studentSchedulePromises);
+
+    // studentClassIds is an object using student SF ID as key and array of Class__c IDs as value
+    const studentClassIds = {};
+    for (let i = 0; i < studentScheduleData.length; i++) {
+      const id = studentScheduleData[i].body.records[0].Id;
+      const classes = studentScheduleData[i].body.records[0].Class_Schedules__r.records;
+      studentClassIds[id] = classes.map(c => c.Class__c);
+    }
+    
+    const studentProfiles = [];
+    for (let i = 0; i < studentContacts.length; i++) {
+      studentProfiles.push(
+        {
+          ...studentContacts[i],
+          classScheduleIds: [...studentClassIds[studentContacts[i].id]],
+        },
+      );
+    }
+
+    return response.json(studentProfiles);
   }
   return next(new HttpErrors(401, 'User not authorized to query by id.', { expose: false }));
 
