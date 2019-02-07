@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import HttpErrors from 'http-errors';
+import superagent from 'superagent';
 import Profile from '../model/profile';
 import bearerAuthMiddleware from '../lib/middleware/bearer-auth-middleware';
 import logger from '../lib/logger';
@@ -95,35 +96,83 @@ profileRouter.get('/api/v2/profiles/me', bearerAuthMiddleware, (request, respons
     return response.json(request.profile);
   }
   return next(new HttpErrors(500, 'User profile missing from request.', { expose: false }));
-  // Profile.init()
-  //   .then(() => {
-  //     Profile.findById(request.profile._id.toString())
-  //       .then((profile) => {
-  //         return response.json(profile);
-  //       });
-  //     return undefined;
-  //   })
-  //   .catch(next);
-  // return undefined;
 });
 
-profileRouter.get('/api/v1/profiles/myStudents', bearerAuthMiddleware, (request, response, next) => {
-  if (request.query.id && request.profile.role !== 'admin' && request.profile.role !== 'mentor') {
-    return next(new HttpErrors(401, 'User not authorized to query by id.', { expose: false }));
+profileRouter.get('/api/v2/profiles/myStudents', bearerAuthMiddleware, async (request, response, next) => {
+  if (request.profile && ['staff', 'mentor'].includes(request.profile.role)) {
+    // retrieve students related to current user
+    const { 
+      accessToken, 
+      queryUrl, 
+      sobjectsUrl, 
+      contactId,
+    } = request.profile;
+
+    const myStudentsQuery = `?q=select+name,+(select+npe4__RelatedContact__c,+npe4__Type__c,+npe4__Status__c+from+npe4__Relationships__r)+from+contact+where+id+=+'${contactId}'`;
+
+    let related;
+    try {
+      related = await superagent.get(`${queryUrl}${myStudentsQuery}`)
+        .set('Authorization', `Bearer ${accessToken}`);
+    } catch (err) {
+      return next(new HttpErrors(err.status, `Error retrieving myStudents for contact ${request.profile.contactId}`, { expose: false }));
+    }
+
+    if (related.body.totalSize > 1) {
+      return next(new HttpErrors(500, `myStudents unexpected response length of ${related.body.totalSize}`, { expose: false }));
+    }
+
+    const contacts = related.body.records[0].npe4__Relationships__r.records;
+
+    const studentIds = contacts.map(contact => (contact.npe4__Status__c === 'Current' 
+      && contact.npe4__Type__c === 'Student' 
+      && contact.npe4__RelatedContact__c));
+    console.log('student contact ids', studentIds);
+
+    const studentContactPromises = [];
+    for (let i = 0; i < studentIds.length; i++) {
+      console.log('pushing', `${sobjectsUrl}Contact/${studentIds[i]}`);
+      studentContactPromises.push(
+        superagent.get(`${sobjectsUrl}Contact/${studentIds[i]}`).set('Authorization', `Bearer ${accessToken}`),
+      );
+    }
+    Promise.all(studentContactPromises)
+      .then((results) => {
+        const studentContacts = results.map(result => (
+          {
+            id: result.body.Id, 
+            firstName: result.body.FirstName, 
+            lastName: result.body.LastName, 
+            name: result.body.Name,
+            grade: result.body.Student_Grade__c,
+            schoolId: result.body.Student_ID__c,
+            gender: related.body.Gender__c,
+          }
+        ));
+        console.log('results from gathering student contact records', studentContacts);
+        return response.json(studentContacts);
+      });
+
+    return response('ERROR RETRIEVING MY STUDENTS').status(400);
   }
+  return next(new HttpErrors(401, 'User not authorized to query by id.', { expose: false }));
 
-  Profile.init()
-    .then(() => {
-      return Profile.find()
-        .where('_id')
-        .in(request.profile.students);
-    })
-    .then((myStudents) => {
-      return response.json(myStudents);
-    })
-    .catch(next);
+  // if (request.query.id && request.profile.role !== 'staff' && request.profile.role !== 'mentor') {
+  //   return next(new HttpErrors(401, 'User not authorized to query by id.', { expose: false }));
+  // }
 
-  return undefined;
+  // Profile.init()
+  //   .then(() => {
+  //     return Profile.find()
+  //       .where('_id')
+  //       .in(request.profile.students);
+  //   })
+  //   .then((myStudents) => {
+  //     return response.json(myStudents);
+  //   })
+  //   .catch(next);
+
+  // return undefined;
 });
 
 

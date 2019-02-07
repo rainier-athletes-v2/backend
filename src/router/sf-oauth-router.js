@@ -48,6 +48,7 @@ sfOAuthRouter.get('/api/v2/oauth/sf', async (request, response, next) => {
     return next(new HttpErrors(err.status, `Error retrieving id from ${idUrl}`, { expose: false }));
   }
   const sobjectsUrl = idResponse.body.urls.sobjects.replace('{version}', process.env.SF_API_VERSION);
+  const queryUrl = idResponse.body.urls.query.replace('{version}', process.env.SF_API_VERSION);
   const userId = idResponse.body.user_id;
   const userUrl = `${sobjectsUrl}User/${userId}`;
   console.log('idResponse userUrl:', userUrl);
@@ -83,7 +84,9 @@ sfOAuthRouter.get('/api/v2/oauth/sf', async (request, response, next) => {
 
   // user is validated.  Build object for use creating raToken
   const raTokenPayload = {
-    access_token: accessToken,
+    accessToken,
+    sobjectsUrl,
+    queryUrl,
     role: contactResponse.body.Mentor__c ? 'mentor' : 'staff',
     contactId,
     contactUrl,
