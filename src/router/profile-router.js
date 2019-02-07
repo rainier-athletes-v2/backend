@@ -153,6 +153,7 @@ profileRouter.get('/api/v2/profiles/myStudents', bearerAuthMiddleware, async (re
         grade: result.body.Student_Grade__c,
         schoolId: result.body.Student_ID__c,
         gender: related.body.Gender__c,
+        role: 'student',
       }
     ));
 
@@ -186,23 +187,6 @@ profileRouter.get('/api/v2/profiles/myStudents', bearerAuthMiddleware, async (re
     return response.json(studentProfiles);
   }
   return next(new HttpErrors(401, 'User not authorized to query by id.', { expose: false }));
-
-  // if (request.query.id && request.profile.role !== 'staff' && request.profile.role !== 'mentor') {
-  //   return next(new HttpErrors(401, 'User not authorized to query by id.', { expose: false }));
-  // }
-
-  // Profile.init()
-  //   .then(() => {
-  //     return Profile.find()
-  //       .where('_id')
-  //       .in(request.profile.students);
-  //   })
-  //   .then((myStudents) => {
-  //     return response.json(myStudents);
-  //   })
-  //   .catch(next);
-
-  // return undefined;
 });
 
 

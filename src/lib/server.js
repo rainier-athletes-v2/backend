@@ -16,6 +16,7 @@ import synopsisRouter from '../router/synopsis-router';
 import relationshipRouter from '../router/relationship-router';
 import extractRouter from '../router/extract-router';
 import studentDataRouter from '../router/student-data-router';
+import scheduleRouter from '../router/class-schedule-router';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -47,6 +48,7 @@ app.use(loggerMiddleware);
 app.use(sfOauthRouter);
 app.use(profileRouter);
 app.use(studentDataRouter);
+app.use(scheduleRouter);
 app.use(pointTrackerRouter);
 app.use(synopsisRouter);
 app.use(extractRouter);
