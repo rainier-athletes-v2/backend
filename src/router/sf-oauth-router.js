@@ -48,6 +48,7 @@ sfOAuthRouter.get('/api/v2/oauth/sf', async (request, response, next) => {
     return next(new HttpErrors(err.status, `Error retrieving id from ${idUrl}`, { expose: false }));
   }
   const sobjectsUrl = idResponse.body.urls.sobjects.replace('{version}', process.env.SF_API_VERSION);
+  const queryUrl = idResponse.body.urls.query.replace('{version}', process.env.SF_API_VERSION);
   const userId = idResponse.body.user_id;
   const userUrl = `${sobjectsUrl}User/${userId}`;
   console.log('idResponse userUrl:', userUrl);
@@ -82,16 +83,23 @@ sfOAuthRouter.get('/api/v2/oauth/sf', async (request, response, next) => {
   logger.log(logger.INFO, 'User validated as Mentor and/or Staff');
 
   // user is validated.  Build object for use creating raToken
+  let userRole = 'unauthorized';
+  if (contactResponse.body.Staff__c) {
+    userRole = 'admin';
+  } else if (contactResponse.body.Mentor__c) {
+    userRole = 'mentor';
+  }
   const raTokenPayload = {
-    access_token: accessToken,
-    role: contactResponse.body.Mentor__c ? 'mentor' : 'staff',
+    accessToken,
+    sobjectsUrl,
+    queryUrl,
+    role: userRole,
     contactId,
     contactUrl,
     userId,
     userUrl,
     firstName: idResponse.body.first_name,
     lastName: idResponse.body.last_name,
-    
   };
   console.log('raTokenPayload', raTokenPayload);
   

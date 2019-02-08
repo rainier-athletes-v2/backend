@@ -1,8 +1,10 @@
 import { Router } from 'express';
 import HttpErrors from 'http-errors';
+import superagent from 'superagent';
 import Profile from '../model/profile';
 import bearerAuthMiddleware from '../lib/middleware/bearer-auth-middleware';
 import logger from '../lib/logger';
+import * as soql from './sf-soql-queries';
 
 const profileRouter = new Router();
 
@@ -92,38 +94,109 @@ profileRouter.get('/api/v1/profiles', bearerAuthMiddleware, (request, response, 
 
 profileRouter.get('/api/v2/profiles/me', bearerAuthMiddleware, (request, response, next) => {
   if (request.profile) {
-    return response.json(request.profile);
+    return response.json(
+      {
+        firstName: request.profile.firstName,
+        lastName: request.profile.lastName,
+        role: request.profile.role,
+        isMentor: request.profile.isMentor,
+        isStaff: request.profile.isStaff,
+      },
+    );
   }
   return next(new HttpErrors(500, 'User profile missing from request.', { expose: false }));
-  // Profile.init()
-  //   .then(() => {
-  //     Profile.findById(request.profile._id.toString())
-  //       .then((profile) => {
-  //         return response.json(profile);
-  //       });
-  //     return undefined;
-  //   })
-  //   .catch(next);
-  // return undefined;
 });
 
-profileRouter.get('/api/v1/profiles/myStudents', bearerAuthMiddleware, (request, response, next) => {
-  if (request.query.id && request.profile.role !== 'admin' && request.profile.role !== 'mentor') {
-    return next(new HttpErrors(401, 'User not authorized to query by id.', { expose: false }));
+profileRouter.get('/api/v2/profiles/myStudents', bearerAuthMiddleware, async (request, response, next) => {
+  if (request.profile && ['admin', 'mentor'].includes(request.profile.role)) {
+    // retrieve students related to current user
+    const { 
+      accessToken, 
+      queryUrl, 
+      // sobjectsUrl, 
+      contactId,
+    } = request.profile;
+
+    const myStudentsQuery = `?q=${soql.myStudents(contactId)}`; 
+    // console.log('query: ', myStudentsQuery);
+    let relatedContacts;
+    try {
+      relatedContacts = await superagent.get(`${queryUrl}${myStudentsQuery}`)
+        .set('Authorization', `Bearer ${accessToken}`);
+    } catch (err) {
+      return next(new HttpErrors(err.status, `Error retrieving myStudents for contact ${request.profile.contactId}`, { expose: false }));
+    }
+
+    if (relatedContacts.body.totalSize > 1) {
+      return next(new HttpErrors(500, `myStudents unexpected response length of ${relatedContacts.body.totalSize}`, { expose: false }));
+    }
+    // console.log('related.body', related.body);
+    // const contacts = related.body.records[0].npe4__Relationships__r.records;
+
+    // const studentIds = contacts.map(contact => (contact.npe4__Status__c === 'Current' 
+    //   && contact.npe4__Type__c === 'Student' 
+    //   && contact.npe4__RelatedContact__c));
+
+    // const studentContactPromises = [];
+    // for (let i = 0; i < studentIds.length; i++) {
+    //   studentContactPromises.push(
+    //     superagent.get(`${sobjectsUrl}Contact/${studentIds[i]}`).set('Authorization', `Bearer ${accessToken}`),
+    //   );
+    // }
+    // const studentContactData = await Promise.all(studentContactPromises);
+    const studentContacts = relatedContacts.body.records[0].npe4__Relationships__r.records.map((student) => {
+      const ref = student.npe4__RelatedContact__r;
+      console.log('ref', ref);
+      const profile = {
+        id: ref.Id, 
+        active: student.npe4__Status__c === 'Current',
+        firstName: ref.FirstName, 
+        lastName: ref.LastName, 
+        role: 'student', // or could be npe4__Type__c.toLowerCase() but not sure that'll always be student
+        primaryEmail: ref.Email,
+        phone: ref.HomePhone,
+        cellPhone: ref.MobilePhone,
+        studentData: {
+          gender: ref.Gender__c,
+          dateOfBirth: ref.Birthdate,
+          grade: ref.Student_Grade__c,
+          schoolId: ref.Student_ID__c,
+        },
+      };
+      return profile;
+    });
+
+    // get student class schedule info
+    // const studentSchedulePromises = [];
+    // for (let i = 0; i < studentIds.length; i++) {
+    //   const classScheduleQuery = `?q=${soql.classSchedule(studentIds[i])}`;
+    //   studentSchedulePromises.push(
+    //     superagent.get(`${queryUrl}${classScheduleQuery}`).set('Authorization', `Bearer ${accessToken}`),
+    //   );
+    // }
+    // const studentScheduleData = await Promise.all(studentSchedulePromises);
+
+    // // studentClassIds is an object using student SF ID as key and array of Class__c IDs as value
+    // const studentClassIds = {};
+    // for (let i = 0; i < studentScheduleData.length; i++) {
+    //   const id = studentScheduleData[i].body.records[0].Id;
+    //   const classes = studentScheduleData[i].body.records[0].Class_Schedules__r.records;
+    //   studentClassIds[id] = classes.map(c => c.Class__c);
+    // }
+    
+    // const studentProfiles = [];
+    // for (let i = 0; i < studentContacts.length; i++) {
+    //   studentProfiles.push(
+    //     {
+    //       ...studentContacts[i],
+    //       classScheduleIds: [...studentClassIds[studentContacts[i].id]],
+    //     },
+    //   );
+    // }
+    console.log(studentContacts);
+    return response.json(studentContacts);
   }
-
-  Profile.init()
-    .then(() => {
-      return Profile.find()
-        .where('_id')
-        .in(request.profile.students);
-    })
-    .then((myStudents) => {
-      return response.json(myStudents);
-    })
-    .catch(next);
-
-  return undefined;
+  return next(new HttpErrors(401, 'User not authorized to query by id.', { expose: false }));
 });
 
 
