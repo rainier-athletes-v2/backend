@@ -113,12 +113,10 @@ profileRouter.get('/api/v2/profiles/myStudents', bearerAuthMiddleware, async (re
     const { 
       accessToken, 
       queryUrl, 
-      // sobjectsUrl, 
       contactId,
     } = request.profile;
 
     const myStudentsQuery = `?q=${soql.myStudents(contactId)}`; 
-    // console.log('query: ', myStudentsQuery);
     let relatedContacts;
     try {
       relatedContacts = await superagent.get(`${queryUrl}${myStudentsQuery}`)
@@ -130,23 +128,9 @@ profileRouter.get('/api/v2/profiles/myStudents', bearerAuthMiddleware, async (re
     if (relatedContacts.body.totalSize > 1) {
       return next(new HttpErrors(500, `myStudents unexpected response length of ${relatedContacts.body.totalSize}`, { expose: false }));
     }
-    // console.log('related.body', related.body);
-    // const contacts = related.body.records[0].npe4__Relationships__r.records;
 
-    // const studentIds = contacts.map(contact => (contact.npe4__Status__c === 'Current' 
-    //   && contact.npe4__Type__c === 'Student' 
-    //   && contact.npe4__RelatedContact__c));
-
-    // const studentContactPromises = [];
-    // for (let i = 0; i < studentIds.length; i++) {
-    //   studentContactPromises.push(
-    //     superagent.get(`${sobjectsUrl}Contact/${studentIds[i]}`).set('Authorization', `Bearer ${accessToken}`),
-    //   );
-    // }
-    // const studentContactData = await Promise.all(studentContactPromises);
     const studentContacts = relatedContacts.body.records[0].npe4__Relationships__r.records.map((student) => {
       const ref = student.npe4__RelatedContact__r;
-      console.log('ref', ref);
       const profile = {
         id: ref.Id, 
         active: student.npe4__Status__c === 'Current',
@@ -161,39 +145,62 @@ profileRouter.get('/api/v2/profiles/myStudents', bearerAuthMiddleware, async (re
           dateOfBirth: ref.Birthdate,
           grade: ref.Student_Grade__c,
           schoolId: ref.Student_ID__c,
+          coaches: [],
+          sports: [],
         },
       };
       return profile;
     });
 
-    // get student class schedule info
-    // const studentSchedulePromises = [];
-    // for (let i = 0; i < studentIds.length; i++) {
-    //   const classScheduleQuery = `?q=${soql.classSchedule(studentIds[i])}`;
-    //   studentSchedulePromises.push(
-    //     superagent.get(`${queryUrl}${classScheduleQuery}`).set('Authorization', `Bearer ${accessToken}`),
-    //   );
-    // }
-    // const studentScheduleData = await Promise.all(studentSchedulePromises);
+    // fetch student team info
+    const affPromises = [];
+    studentContacts.forEach((student) => {
+      const affiliationsQuery = `?q=${soql.studentAffiliations(student.id)}`;
+      try {
+        affPromises.push(
+          superagent.get(`${queryUrl}${affiliationsQuery}`)
+            .set('Authorization', `Bearer ${accessToken}`),
+        );
+      } catch (err) {
+        return next(new HttpErrors(err.status, `Error retrieving student affiliations for student ${student.id}`, { expose: false }));
+      }
+    });
+    const affBodies = await Promise.all(affPromises);
+    const affRecords = affBodies.map(b => b.body.records);
+    // console.log(JSON.stringify(affRecords, null, 2));
+    const teamData = [];
+    affRecords.forEach((student) => {
+      // student is an array of affiliation objects. find the teams
+      const teams = student.filter(aff => aff.npe5__Organization__r.Type === 'Sports Team' && aff.npe5__Status__c === 'Current')
+        .map(team => ({
+          student: team.npe5__Contact__r.Id,
+          coach: {
+            name: team.npe5__Organization__r.npe01__One2OneContact__r.Name,
+            phone: team.npe5__Organization__r.npe01__One2OneContact__r.Phone,
+            email: team.npe5__Organization__r.npe01__One2OneContact__r.Email,
+            role: 'coach',
+            currentCoach: true,
+          },
+          sport: {
+            sport: 'not specified',
+            team: team.npe5__Organization__r.Name,
+            league: 'not specified',
+            teamCalendarUrl: 'not specified',
+            currentlyPlaying: true,
+          },
+        }));
+      teamData.push(teams);
+    });
 
-    // // studentClassIds is an object using student SF ID as key and array of Class__c IDs as value
-    // const studentClassIds = {};
-    // for (let i = 0; i < studentScheduleData.length; i++) {
-    //   const id = studentScheduleData[i].body.records[0].Id;
-    //   const classes = studentScheduleData[i].body.records[0].Class_Schedules__r.records;
-    //   studentClassIds[id] = classes.map(c => c.Class__c);
-    // }
-    
-    // const studentProfiles = [];
-    // for (let i = 0; i < studentContacts.length; i++) {
-    //   studentProfiles.push(
-    //     {
-    //       ...studentContacts[i],
-    //       classScheduleIds: [...studentClassIds[studentContacts[i].id]],
-    //     },
-    //   );
-    // }
-    console.log(studentContacts);
+    // add coach and sports info to studentContacts
+    teamData.forEach((student) => {  
+      student.forEach((team) => { 
+        const studentRef = studentContacts.find(s => s.id === team.student); 
+        studentRef.studentData.coaches.push({ coach: { ...team.coach }, currentCoach: true });
+        studentRef.studentData.sports.push({ ...team.sport });
+      });
+    });
+
     return response.json(studentContacts);
   }
   return next(new HttpErrors(401, 'User not authorized to query by id.', { expose: false }));

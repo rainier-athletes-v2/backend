@@ -65,15 +65,19 @@ export const thisSynopsisReport = reportId => (
 );
 
 // retrieve student's team affiliation
-export const theirTeams = studentId => (
+export const studentAffiliations = studentId => (
   `SELECT 
     Id, 
     Name, 
-    npe5__Organization__r.npe01__One2OneContact__r.Name, 
+    npe5__Organization__r.npe01__One2OneContact__r.Name,
+    npe5__Organization__r.npe01__One2OneContact__r.Phone,
+    npe5__Organization__r.npe01__One2OneContact__r.Email,
     npe5__Organization__r.Name, 
     npe5__Organization__r.Type, 
-    npe5__Contact__r.Name, 
-    npe5__Role__c 
+    npe5__Contact__r.Name,
+    npe5__Contact__r.Id,
+    npe5__Role__c,
+    npe5__Status__c
   FROM npe5__Affiliation__c 
-  WHERE npe5__Contact__c = '${studentId}`
+  WHERE npe5__Contact__c = '${studentId}'`
 );

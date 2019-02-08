@@ -16,15 +16,8 @@ export default (request, response, next) => {
     .catch((error) => {
       return Promise.reject(new HttpErrors(401, `BEARER AUTH - unable to verify token ${JSON.stringify(error)}`, { expose: false }));
     })
-    .then((decryptedToken) => {
-      // tokenPayload = decryptedToken;
-      // return Profile.findOne({ _id: tokenPayload.profileId });
-    // })
-    // .then((profile) => {
-      // if (!profile) return next(new HttpErrors(403, 'BEARER AUTH - no profile found', { expose: false }));
+    .then((decryptedToken) => {;
       request.profile = decryptedToken;
-      console.log('bearer middleware returning', request.profile);
-      // request.googleTokenResponse = tokenPayload.googleTokenResponse;
       return next();
     })
     .catch(next);
