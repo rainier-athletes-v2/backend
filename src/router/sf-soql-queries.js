@@ -65,7 +65,7 @@ export const thisSynopsisReport = reportId => (
 );
 
 // retrieve student's team affiliation
-export const theirTeams = studentId => (
+export const studentAffiliations = studentId => (
   `SELECT 
     Id, 
     Name, 
