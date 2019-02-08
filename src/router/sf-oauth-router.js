@@ -101,7 +101,7 @@ sfOAuthRouter.get('/api/v2/oauth/sf', async (request, response, next) => {
     firstName: idResponse.body.first_name,
     lastName: idResponse.body.last_name,
   };
-  console.log('raTokenPayload', raTokenPayload);
+  console.log('raTokenPayload.accessToken', raTokenPayload.accessToken);
   
   const raToken = jsonWebToken.sign(raTokenPayload, process.env.SECRET);
 

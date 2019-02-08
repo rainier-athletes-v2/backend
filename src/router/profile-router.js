@@ -145,6 +145,8 @@ profileRouter.get('/api/v2/profiles/myStudents', bearerAuthMiddleware, async (re
           dateOfBirth: ref.Birthdate,
           grade: ref.Student_Grade__c,
           schoolId: ref.Student_ID__c,
+          coaches: [],
+          sports: [],
         },
       };
       return profile;
@@ -153,7 +155,7 @@ profileRouter.get('/api/v2/profiles/myStudents', bearerAuthMiddleware, async (re
     // fetch student team info
     const affPromises = [];
     studentContacts.forEach((student) => {
-      const affiliationsQuery = soql.studentAffiliations(student.id);
+      const affiliationsQuery = `?q=${soql.studentAffiliations(student.id)}`;
       try {
         affPromises.push(
           superagent.get(`${queryUrl}${affiliationsQuery}`)
@@ -165,6 +167,39 @@ profileRouter.get('/api/v2/profiles/myStudents', bearerAuthMiddleware, async (re
     });
     const affBodies = await Promise.all(affPromises);
     const affRecords = affBodies.map(b => b.body.records);
+    // console.log(JSON.stringify(affRecords, null, 2));
+    const teamData = [];
+    affRecords.forEach((student) => {
+      // student is an array of affiliation objects. find the teams
+      const teams = student.filter(aff => aff.npe5__Organization__r.Type === 'Sports Team' && aff.npe5__Status__c === 'Current')
+        .map(team => ({
+          student: team.npe5__Contact__r.Id,
+          coach: {
+            name: team.npe5__Organization__r.npe01__One2OneContact__r.Name,
+            phone: team.npe5__Organization__r.npe01__One2OneContact__r.Phone,
+            email: team.npe5__Organization__r.npe01__One2OneContact__r.Email,
+            role: 'coach',
+            currentCoach: true,
+          },
+          sport: {
+            sport: 'not specified',
+            team: team.npe5__Organization__r.Name,
+            league: 'not specified',
+            teamCalendarUrl: 'not specified',
+            currentlyPlaying: true,
+          },
+        }));
+      teamData.push(teams);
+    });
+
+    // add coach and sports info to studentContacts
+    teamData.forEach((student) => {  
+      student.forEach((team) => { 
+        const studentRef = studentContacts.find(s => s.id === team.student); 
+        studentRef.studentData.coaches.push({ coach: { ...team.coach }, currentCoach: true });
+        studentRef.studentData.sports.push({ ...team.sport });
+      });
+    });
 
     return response.json(studentContacts);
   }
