@@ -17,7 +17,7 @@ scheduleRouter.get('/api/v2/schedule/:studentId', bearerAuthMiddleware, async (r
   }
 
   // good to go
-  const classScheduleQuery = '?q=select+name,+id,+(select+Class__c+from+Class_Schedules__r)+from+Contact+where+Id+=';
+  const classScheduleQuery = '?q=select+Class__c,TeacherFormula__c,Class__r.Name,TermFormula__c,PeriodFormula__c+from+ClassSchedule__c+where+Student__c+=+';
   const { 
     accessToken, 
     queryUrl, 
@@ -29,40 +29,41 @@ scheduleRouter.get('/api/v2/schedule/:studentId', bearerAuthMiddleware, async (r
   const classScheduleData = await superagent.get(`${queryUrl}${classScheduleQuery}'${studentId}'`).set('Authorization', `Bearer ${accessToken}`);
 
   // map to array of Class__c id's
-  const classIds = classScheduleData.body.records[0].Class_Schedules__r.records.map(c => c.Class__c);
+  // const classIds = classScheduleData.body.records[0].Class_Schedules__r.records.map(c => c.Class__c);
   
-  // fetch Class__c data
-  const classPromises = [];
-  for (let i = 0; i < classIds.length; i++) {
-    classPromises.push(
-      superagent.get(`${sobjectsUrl}Class__c/${classIds[i]}`).set('Authorization', `Bearer ${accessToken}`),
-    );
-  }
-  const classDataResult = await Promise.all(classPromises);
-  
+  // // fetch Class__c data
+  // const classPromises = [];
+  // for (let i = 0; i < classIds.length; i++) {
+  //   classPromises.push(
+  //     superagent.get(`${sobjectsUrl}Class__c/${classIds[i]}`).set('Authorization', `Bearer ${accessToken}`),
+  //   );
+  // }
+  // const classDataResult = await Promise.all(classPromises);
+
   // map to array of Class__c objects
-  const classData = classDataResult.map(r => r.body);
+  const classData = classScheduleData.map(r => r.body);
   /*
   {
-    "attributes": {
-        "type": "Class__c",
-        "url": "/services/data/v44.0/sobjects/Class__c/a0t5C0000003PSGQA2"
-    },
-    "Id": "a0t5C0000003PSGQA2",
-    "OwnerId": "0051U000000fDfVQAU",
-    "IsDeleted": false,
-    "Name": "PE 6th",
-    "CreatedDate": "2019-01-30T03:52:17.000+0000",
-    "CreatedById": "0051U000000fDfVQAU",
-    "LastModifiedDate": "2019-02-04T19:18:15.000+0000",
-    "LastModifiedById": "0051U000000fDfVQAU",
-    "SystemModstamp": "2019-02-04T19:18:15.000+0000",
-    "Teacher__c": "0035C00000Ghna5QAB",
-    "Period__c": 1,
-    "School_Year__c": 2018,
-    "Term__c": "S1",
-    "School__c": "0015C00000Lz4nNQAR"
-}
+    "totalSize": 7,
+    "done": true,
+    "records": [
+        {
+            "attributes": {
+                "type": "ClassSchedule__c",
+                "url": "/services/data/v44.0/sobjects/ClassSchedule__c/a0u5C000001INnIQAW"
+            },
+            "Class__c": "a0t5C0000003PSGQA2",
+            "TeacherFormula__c": "Pilichowski Graham, T.",
+            "Class__r": {
+                "attributes": {
+                    "type": "Class__c",
+                    "url": "/services/data/v44.0/sobjects/Class__c/a0t5C0000003PSGQA2"
+                },
+                "Name": "PE 6th"
+            },
+            "TermFormula__c": "S1",
+            "PeriodFormula__c": 1
+        },
 */
   // studentClassIds is an object using student SF ID as key and array of Class__c IDs as value
   // const studentClassIds = {};

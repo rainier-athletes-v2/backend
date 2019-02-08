@@ -83,19 +83,23 @@ sfOAuthRouter.get('/api/v2/oauth/sf', async (request, response, next) => {
   logger.log(logger.INFO, 'User validated as Mentor and/or Staff');
 
   // user is validated.  Build object for use creating raToken
+  let userRole = 'unauthorized';
+  if (contactResponse.body.Staff__c) {
+    userRole = 'admin';
+  } else if (contactResponse.body.Mentor__c) {
+    userRole = 'mentor';
+  }
   const raTokenPayload = {
     accessToken,
     sobjectsUrl,
     queryUrl,
-    role: contactResponse.body.Mentor__c ? 'mentor' : 'staff',
+    role: userRole,
     contactId,
     contactUrl,
     userId,
     userUrl,
     firstName: idResponse.body.first_name,
     lastName: idResponse.body.last_name,
-    isMentor: contactResponse.body.Mentor__c,
-    isStaff: contactResponse.body.Staff__c,
   };
   console.log('raTokenPayload', raTokenPayload);
   
