@@ -15,6 +15,9 @@ export const myStudents = mentorId => (
       npe4__RelatedContact__r.HomePhone,
       npe4__RelatedContact__r.MobilePhone,
       npe4__RelatedContact__r.Email,
+      npe4__RelatedContact__r.StudentGoogleCalendarUrl__c,
+      npe4__RelatedContact__r.StudentGoogleDocsUrl__c,
+      npe4__RelatedContact__r.StudentSynopsisReportArchiveUrl__c,
       npe4__Type__c, 
       npe4__Status__c
     FROM npe4__Relationships__r) 
