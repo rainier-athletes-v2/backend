@@ -11,8 +11,8 @@ import loggerMiddleware from './middleware/logger-middleware';
 // our routes
 import sfOauthRouter from '../router/sf-oauth-router';
 import profileRouter from '../router/profile-router';
-import pointTrackerRouter from '../router/point-tracker-router';
-import synopsisRouter from '../router/synopsis-router';
+import synopsisReportRouter from '../router/synopsis-report-router';
+import synopsisPdfRouter from '../router/synopsis-pdf-router';
 import relationshipRouter from '../router/relationship-router';
 import extractRouter from '../router/extract-router';
 import studentDataRouter from '../router/student-data-router';
@@ -49,8 +49,8 @@ app.use(sfOauthRouter);
 app.use(profileRouter);
 app.use(studentDataRouter);
 app.use(scheduleRouter);
-app.use(pointTrackerRouter);
-app.use(synopsisRouter);
+app.use(synopsisReportRouter);
+app.use(synopsisPdfRouter);
 app.use(extractRouter);
 app.use(relationshipRouter);
 

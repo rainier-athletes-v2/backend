@@ -37,7 +37,7 @@ export const classSchedule = studentId => (
 );
 
 // retrieve top 5 latest synopsis reports for initial mentor selection
-export const latestSynopsisReports = studentId => (
+export const recentSynopsisReports = studentId => (
   `SELECT 
     Id, 
     Point_Sheet_Status__c,
@@ -49,19 +49,56 @@ export const latestSynopsisReports = studentId => (
 
 // retrieve data for the synopsis report with id = <id>. Needs to have more fields addded to get complete SR/PT built.
 export const thisSynopsisReport = reportId => (
-  `SELECT 
+  `SELECT
     Id,
     Name,
+    Week__c,
+    Start_date__c,
+    Synopsis_Report_Status__c,
+    Student__r.Name,
+    Mentor__r.Name,
+    Mentor_Is_Substitute__c,
+    Weekly_Check_In_Status__c, 
+    Playing_Time_Only__c,
+    
+    Student_Touch_Points__c,
+    Student_Touch_Points_Other__c,
+    Family_Touch_Points__c,
+    Family_Touch_Points_Other__c,
+    Teacher_Touch_Points__c,
+    Teacher_Touch_Points_Other__c,
+    Coach_Touch_Points__c,
+    Coach_Touch_Points_Other__c,
+    
+    Wednesday_Check_In__c,
+    Mentor_Meal__c,
+    Sports_Game__c,
+    Community_Event__c,
+    IEP_Summer_Review_Meeting__c,
+    Other_Meetup__c,
+    One_Team_Notes__c,
+    
     Point_Sheet_Status__c,
-    Start_Date__c, 
-    Family_Touch_Points__c, 
+    Point_Sheet_Status_Notes__c,
+    
+    Earned_Playing_Time__c,
+    Mentor_Granted_Playing_Time__c,
+    
+    Mentor_Granted_Playing_Time_Explanation__c,
+    Student_Action_Items__c,
+    Sports_Update__c,
+    Additional_Comments__c,
+
     (SELECT 
       Id, 
       Name, 
       Excused_Days__c, 
       Grade__c,
       Stamps__c, 
-      Half_Stamps__c
+      Half_Stamps__c,
+      Class__r.Name,
+      Class__r.Period__c,
+      Class__r.Teacher__r.Name
     FROM PointTrackers__r) 
   FROM SynopsisReport__c 
   WHERE Id = '${reportId}`
