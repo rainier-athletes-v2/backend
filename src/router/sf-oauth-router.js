@@ -51,7 +51,6 @@ sfOAuthRouter.get('/api/v2/oauth/sf', async (request, response, next) => {
   const queryUrl = idResponse.body.urls.query.replace('{version}', process.env.SF_API_VERSION);
   const userId = idResponse.body.user_id;
   const userUrl = `${sobjectsUrl}User/${userId}`;
-  console.log('idResponse userUrl:', userUrl);
 
   // now get user data
   let userResponse;

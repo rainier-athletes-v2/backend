@@ -39,12 +39,15 @@ export const classSchedule = studentId => (
 // retrieve top 5 latest synopsis reports for initial mentor selection
 export const recentSynopsisReports = studentId => (
   `SELECT 
-    Id, 
+    Id,
+    Name,
     Point_Sheet_Status__c,
-    Start_Date__c 
+    Synopsis_Report_Status__c,
+    Start_Date__c,
+    Week__c
   FROM SynopsisReport__c 
   WHERE Student__c = '${studentId}' 
-  ORDER BY Start_Date__c DESC LIMIT 5`
+  ORDER BY Start_Date__c DESC LIMIT 3`
 );
 
 // retrieve data for the synopsis report with id = <id>. Needs to have more fields addded to get complete SR/PT built.
@@ -53,7 +56,7 @@ export const thisSynopsisReport = reportId => (
     Id,
     Name,
     Week__c,
-    Start_date__c,
+    Start_Date__c,
     Synopsis_Report_Status__c,
     Student__r.Name,
     Mentor__r.Name,
@@ -101,7 +104,7 @@ export const thisSynopsisReport = reportId => (
       Class__r.Teacher__r.Name
     FROM PointTrackers__r) 
   FROM SynopsisReport__c 
-  WHERE Id = '${reportId}`
+  WHERE Id = '${reportId}'`
 );
 
 // retrieve student's team affiliation

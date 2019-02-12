@@ -52,10 +52,95 @@ synopsisReportRouter.get('/api/v2/synopsisreport/:reportId', bearerAuthMiddlewar
     srQueryResults = await superagent.get(`${queryUrl}${srQuery}`)
       .set('Authorization', `Bearer ${accessToken}`);
   } catch (err) {
-    return next(new HttpErrors(err.status, `Error retrieving Synopsis Report ${request.query.id}`, { expose: false }));
+    return next(new HttpErrors(err.status, `Error retrieving Synopsis Report ${request.params.reportId}`, { expose: false }));
   }
-
   return response.json(srQueryResults.body).status(200);  
+});
+
+synopsisReportRouter.put('/api/v2/synopsisreport', bearerAuthMiddleware, async (request, response, next) => {
+  if (!['mentor', 'admin'].includes(request.profile.role)) {
+    return next(new HttpErrors(403, 'SynopsisReport PUT: User not authorized.'));
+  }
+  if (!request.body) {
+    return next(new HttpErrors(400, 'SynopsisReport PUT: Missing request body', { expose: false }));
+  }
+  const {
+    accessToken,
+    sobjectsUrl,
+  } = request.profile;
+  // const modifiedSR = JSON.parse(
+    // {
+    //   "attributes": {
+    //       "type": "SynopsisReport__c",
+    //       "url": "/services/data/v44.0/sobjects/SynopsisReport__c/a0q5C000000RkYaQAK"
+    //   },
+    //   "Id": "a0q5C000000RkYaQAK",
+    //   "Name": "SR-11",
+    //   "Week__c": "2/25/2019 thru 3/3/2019",
+    //   "Start_Date__c": "2019-02-25",
+    //   "Synopsis_Report_Status__c": "Completed",
+    //   "Student__r": {
+    //       "attributes": {
+    //           "type": "Contact",
+    //           "url": "/services/data/v44.0/sobjects/Contact/0035C00000GhnZKQAZ"
+    //       },
+    //       "Name": "Abdularahman Aljanabi"
+    //   },
+    //   "Mentor__r": {
+    //       "attributes": {
+    //           "type": "Contact",
+    //           "url": "/services/data/v44.0/sobjects/Contact/0035C00000GiZCBQA3"
+    //       },
+    //       "Name": "Tracy Mentor"
+    //   },
+    //   "Mentor_Is_Substitute__c": false,
+    //   "Weekly_Check_In_Status__c": "Met",
+    //   "Playing_Time_Only__c": true,
+    //   "Student_Touch_Points__c": null,
+    //   "Student_Touch_Points_Other__c": null,
+    //   "Family_Touch_Points__c": null
+    // }
+  // );
+  const modifiedSR = {
+    attributes: {
+      type: 'SynopsisReport__c',
+      url: '/services/data/v44.0/sobjects/SynopsisReport__c/a0q5C000000RkYaQAK',
+    },
+    // Id: 'a0q5C000000RkYaQAK',
+    // Name: 'SR-11',
+    Weekly_Check_In_Status__c: 'Student missed check in',
+    Playing_Time_Only__c: true,
+    Additional_Comments__c: 'These are YET MORE additional comments added via the api',
+  };
+
+
+  const ptId = 'a0s5C0000002E9ZQAU';
+  const soName = 'PointTracker__c';
+
+  // "Name": "PT-37",
+  const modifiedPT = {
+    Excused_Days__c: 9,
+    Stamps__c: 9,
+    Half_Stamps__c: 9,
+  };
+
+  console.log('modifiedSR', modifiedSR);
+  let patchResult;
+  // const url = `${sobjectsUrl}SynopsisReport__c/${request.body.Id}`;
+  const url = `${sobjectsUrl}${soName}/${ptId}`;
+  // const url = `${sobjectsUrl}SynopsisReport__c`;
+  console.log('patch url', url);
+  try {
+    patchResult = await superagent.patch(url)
+      .set('Authorization', `Bearer ${accessToken}`)
+      // .set('_HttpMethod', 'PATCH')
+      .send(modifiedPT);
+  } catch (err) {
+    console.error(err);
+    return next(new HttpErrors(err.status, `Error retrieving Synopsis Report ${request.body.Id}`, { expose: false }));
+  }
+  console.log('patchResult', patchResult);
+  return response.sendStatus(200);
 });
 
 synopsisReportRouter.post('/api/v1/pointstracker', bearerAuthMiddleware, (request, response, next) => {
