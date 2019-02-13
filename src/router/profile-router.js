@@ -148,6 +148,7 @@ profileRouter.get('/api/v2/profiles/myStudents', bearerAuthMiddleware, async (re
           synopsisReportArchiveUrl: ref.StudentSynopsisReportArchiveUrl__c,
           googleCalendarUrl: ref.StudentGoogleCalendarUrl__c,
           googleDocsUrl: ref.StudentGoogleDocsUrl__c,
+          isElementaryStudent: ref.Elementary_Student__c,
           coaches: [],
           sports: [],
         },
