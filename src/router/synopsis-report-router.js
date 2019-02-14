@@ -57,6 +57,31 @@ synopsisReportRouter.get('/api/v2/synopsisreport/:reportId', bearerAuthMiddlewar
   return response.json(srQueryResults.body).status(200);  
 });
 
+const _prepSynopsisReport = (sr) => {
+  // strip out properties that will cause SF PATCH (update) request to blow up
+  const newSR = Object.assign({}, sr);
+  delete newSR.attributes;
+  delete newSR.Id;
+  delete newSR.Name;
+  delete newSR.Week__c;
+  delete newSR.Start_Date__c;
+  delete newSR.Student__r;
+  delete newSR.PointTrackers__r;
+  return newSR;
+};
+
+const _prepPointTrackers = (sr) => {
+  // prep point trackers array for use as update request body
+  const pt = {};
+  pt.allOrNone = false;
+  pt.records = sr.PointTrackers__r.records.map((p) => {
+    delete p.Class__r;
+    delete p.Name;
+    return p;
+  });
+  return pt;
+};
+
 synopsisReportRouter.put('/api/v2/synopsisreport', bearerAuthMiddleware, async (request, response, next) => {
   if (!['mentor', 'admin'].includes(request.profile.role)) {
     return next(new HttpErrors(403, 'SynopsisReport PUT: User not authorized.'));
@@ -64,83 +89,41 @@ synopsisReportRouter.put('/api/v2/synopsisreport', bearerAuthMiddleware, async (
   if (!request.body) {
     return next(new HttpErrors(400, 'SynopsisReport PUT: Missing request body', { expose: false }));
   }
+
   const {
     accessToken,
     sobjectsUrl,
+    ptUpdateUrl,
   } = request.profile;
-  // const modifiedSR = JSON.parse(
-    // {
-    //   "attributes": {
-    //       "type": "SynopsisReport__c",
-    //       "url": "/services/data/v44.0/sobjects/SynopsisReport__c/a0q5C000000RkYaQAK"
-    //   },
-    //   "Id": "a0q5C000000RkYaQAK",
-    //   "Name": "SR-11",
-    //   "Week__c": "2/25/2019 thru 3/3/2019",
-    //   "Start_Date__c": "2019-02-25",
-    //   "Synopsis_Report_Status__c": "Completed",
-    //   "Student__r": {
-    //       "attributes": {
-    //           "type": "Contact",
-    //           "url": "/services/data/v44.0/sobjects/Contact/0035C00000GhnZKQAZ"
-    //       },
-    //       "Name": "Abdularahman Aljanabi"
-    //   },
-    //   "Mentor__r": {
-    //       "attributes": {
-    //           "type": "Contact",
-    //           "url": "/services/data/v44.0/sobjects/Contact/0035C00000GiZCBQA3"
-    //       },
-    //       "Name": "Tracy Mentor"
-    //   },
-    //   "Mentor_Is_Substitute__c": false,
-    //   "Weekly_Check_In_Status__c": "Met",
-    //   "Playing_Time_Only__c": true,
-    //   "Student_Touch_Points__c": null,
-    //   "Student_Touch_Points_Other__c": null,
-    //   "Family_Touch_Points__c": null
-    // }
-  // );
-  const modifiedSR = {
-    attributes: {
-      type: 'SynopsisReport__c',
-      url: '/services/data/v44.0/sobjects/SynopsisReport__c/a0q5C000000RkYaQAK',
-    },
-    // Id: 'a0q5C000000RkYaQAK',
-    // Name: 'SR-11',
-    Weekly_Check_In_Status__c: 'Student missed check in',
-    Playing_Time_Only__c: true,
-    Additional_Comments__c: 'These are YET MORE additional comments added via the api',
-  };
 
+  const synopsisReport = request.body;
 
-  const ptId = 'a0s5C0000002E9ZQAU';
-  const soName = 'PointTracker__c';
+  const srId = synopsisReport.Id;
+  const srName = synopsisReport.Name;
+  const preppedSR = _prepSynopsisReport(synopsisReport); // prepair SynopsisReport__c for update
+  const preppedPT = _prepPointTrackers(synopsisReport);
 
-  // "Name": "PT-37",
-  const modifiedPT = {
-    Excused_Days__c: 9,
-    Stamps__c: 9,
-    Half_Stamps__c: 9,
-  };
-
-  console.log('modifiedSR', modifiedSR);
-  let patchResult;
-  // const url = `${sobjectsUrl}SynopsisReport__c/${request.body.Id}`;
-  const url = `${sobjectsUrl}${soName}/${ptId}`;
-  // const url = `${sobjectsUrl}SynopsisReport__c`;
-  console.log('patch url', url);
   try {
-    patchResult = await superagent.patch(url)
+    await superagent.patch(`${sobjectsUrl}SynopsisReport__c/${srId}`)
       .set('Authorization', `Bearer ${accessToken}`)
-      // .set('_HttpMethod', 'PATCH')
-      .send(modifiedPT);
+      .send(preppedSR);
   } catch (err) {
     console.error(err);
-    return next(new HttpErrors(err.status, `Error retrieving Synopsis Report ${request.body.Id}`, { expose: false }));
+    return next(new HttpErrors(err.status, `Error Updating Synopsis Report ${request.body.Id}`, { expose: false }));
   }
-  console.log('patchResult', patchResult);
-  return response.sendStatus(200);
+
+  let ptResult;
+  try {
+    ptResult = await superagent.patch(ptUpdateUrl)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send(preppedPT);
+  } catch (err) {
+    return next(new HttpErrors(err.status, `Error Updating Point Trackers for SR ${srName}`, { expose: false }));
+  }
+  
+  const ptUpdateSuccess = ptResult.body.every(r => r.success);
+
+  return response.sendStatus(ptUpdateSuccess ? 204 : 500);
 });
 
 synopsisReportRouter.post('/api/v1/pointstracker', bearerAuthMiddleware, (request, response, next) => {
