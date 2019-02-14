@@ -135,7 +135,8 @@ profileRouter.get('/api/v2/profiles/myStudents', bearerAuthMiddleware, async (re
         id: ref.Id, 
         active: student.npe4__Status__c === 'Current',
         firstName: ref.FirstName, 
-        lastName: ref.LastName, 
+        lastName: ref.LastName,
+        name: ref.Name,
         role: 'student', // or could be npe4__Type__c.toLowerCase() but not sure that'll always be student
         primaryEmail: ref.Email,
         phone: ref.HomePhone,

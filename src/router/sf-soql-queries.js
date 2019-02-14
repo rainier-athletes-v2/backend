@@ -6,6 +6,7 @@ export const myStudents = mentorId => (
       npe4__RelatedContact__r.Id,
       npe4__RelatedContact__r.FirstName,
       npe4__RelatedContact__r.LastName,
+      npe4__RelatedCOntact__r.Name,
       npe4__RelatedContact__r.Student_Grade__c,
       npe4__RelatedContact__r.Gender__c,
       npe4__RelatedContact__r.Birthdate,
@@ -101,7 +102,8 @@ export const thisSynopsisReport = reportId => (
       Half_Stamps__c,
       Class__r.Name,
       Class__r.Period__c,
-      Class__r.Teacher__r.Name
+      Class__r.Teacher__r.Name,
+      Class__r.Teacher__r.LastName
     FROM PointTrackers__r) 
   FROM SynopsisReport__c 
   WHERE Id = '${reportId}'`
