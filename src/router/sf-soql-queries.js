@@ -26,6 +26,31 @@ export const myStudents = mentorId => (
   WHERE Id = '${mentorId}'`
 );
 
+export const myStudentsV2 = mentorId => (
+  `SELECT 
+    Name, 
+    Id,
+    Student__r.Id,
+    Student__r.FirstName,
+    Student__r.LastName,
+    Student__r.Name,
+    Student__r.Roles__c,
+    Student__r.Student_Grade__c,
+    Student__r.Gender__c,
+    Student__r.Birthdate,
+    Student__r.Student_ID__c,
+    Student__r.npe01__PreferredPhone__c,
+    Student__r.Phone,
+    Student__r.HomePhone,
+    Student__r.MobilePhone,
+    Student__r.Email,
+    Student__r.StudentGoogleCalendarUrl__c,
+    Student__r.StudentGoogleDocsUrl__c,
+    Student__r.StudentSynopsisReportArchiveUrl__c
+  FROM SynopsisReport__c 
+  WHERE SynopsisReport__c.Mentor__r.Id = '${mentorId}'`
+);
+
 export const classSchedule = studentId => (
   `SELECT 
     Name, 
@@ -103,7 +128,8 @@ export const thisSynopsisReport = reportId => (
       Class__r.Name,
       Class__r.Period__c,
       Class__r.Teacher__r.Name,
-      Class__r.Teacher__r.LastName
+      Class__r.Teacher__r.LastName,
+      Class__r.School__r.Name
     FROM PointTrackers__r) 
   FROM SynopsisReport__c 
   WHERE Id = '${reportId}'`

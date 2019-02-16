@@ -116,7 +116,7 @@ profileRouter.get('/api/v2/profiles/myStudents', bearerAuthMiddleware, async (re
       contactId,
     } = request.profile;
 
-    const myStudentsQuery = `?q=${soql.myStudents(contactId)}`; 
+    const myStudentsQuery = `?q=${soql.myStudentsV2(contactId)}`; 
     let relatedContacts;
     try {
       relatedContacts = await superagent.get(`${queryUrl}${myStudentsQuery}`)
@@ -125,15 +125,26 @@ profileRouter.get('/api/v2/profiles/myStudents', bearerAuthMiddleware, async (re
       return next(new HttpErrors(err.status, `Error retrieving myStudents for contact ${request.profile.contactId}`, { expose: false }));
     }
 
-    if (relatedContacts.body.totalSize > 1) {
-      return next(new HttpErrors(500, `myStudents unexpected response length of ${relatedContacts.body.totalSize}`, { expose: false }));
+    // if (relatedContacts.body.totalSize > 1) {
+    //   return next(new HttpErrors(500, `myStudents unexpected response length of ${relatedContacts.body.totalSize}`, { expose: false }));
+    // }
+    // filter down to unique students
+    const uniqueStudents = new Map();
+    const { records } = relatedContacts.body;
+    for (let i = 0; i < records.length; i++) {
+      if (uniqueStudents.has(records[i].Student__r.Id) === false
+        && records[i].Student__r.Roles__c.indexOf('Student') >= 0) {
+        uniqueStudents.set(records[i].Student__r.Id, records[i].Student__r);
+      }
     }
-
-    const studentContacts = relatedContacts.body.records[0].npe4__Relationships__r.records.map((student) => {
-      const ref = student.npe4__RelatedContact__r;
+    console.log(uniqueStudents);
+    // const studentContacts = relatedContacts.body.records[0].npe4__Relationships__r.records.map((student) => {
+    const studentsArray = [...uniqueStudents.values()];
+    const studentContacts = studentsArray.map((ref) => {
+      // const ref = student.Student__r;
       const profile = {
         id: ref.Id, 
-        active: student.npe4__Status__c === 'Current',
+        active: true, // ref.npe4__Status__c === 'Current',
         firstName: ref.FirstName, 
         lastName: ref.LastName,
         name: ref.Name,
