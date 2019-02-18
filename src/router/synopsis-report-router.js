@@ -108,7 +108,6 @@ synopsisReportRouter.put('/api/v2/synopsisreport', bearerAuthMiddleware, async (
       .set('Authorization', `Bearer ${accessToken}`)
       .send(preppedSR);
   } catch (err) {
-    console.error(err);
     return next(new HttpErrors(err.status, `Error Updating Synopsis Report ${request.body.Id}`, { expose: false }));
   }
 
@@ -120,10 +119,11 @@ synopsisReportRouter.put('/api/v2/synopsisreport', bearerAuthMiddleware, async (
   } catch (err) {
     return next(new HttpErrors(err.status, `Error Updating Point Trackers for SR ${srName}`, { expose: false }));
   }
-  
-  const ptUpdateSuccess = ptResult.body.every(r => r.success);
 
-  return response.sendStatus(ptUpdateSuccess ? 204 : 500);
+  if (ptResult.body.every(r => r.success)) {
+    return response.sendStatus(204);
+  }
+  return next(new HttpErrors(500, `Failure saving point trackers for SR ${srName}`, { expose: false }));
 });
 
 synopsisReportRouter.post('/api/v1/pointstracker', bearerAuthMiddleware, (request, response, next) => {

@@ -137,7 +137,7 @@ profileRouter.get('/api/v2/profiles/myStudents', bearerAuthMiddleware, async (re
         uniqueStudents.set(records[i].Student__r.Id, records[i].Student__r);
       }
     }
-    console.log(uniqueStudents);
+    // console.log(uniqueStudents);
     // const studentContacts = relatedContacts.body.records[0].npe4__Relationships__r.records.map((student) => {
     const studentsArray = [...uniqueStudents.values()];
     const studentContacts = studentsArray.map((ref) => {
@@ -179,6 +179,7 @@ profileRouter.get('/api/v2/profiles/myStudents', bearerAuthMiddleware, async (re
       } catch (err) {
         return next(new HttpErrors(err.status, `Error retrieving student affiliations for student ${student.id}`, { expose: false }));
       }
+      return undefined;
     });
     const affBodies = await Promise.all(affPromises);
     const affRecords = affBodies.map(b => b.body.records);
