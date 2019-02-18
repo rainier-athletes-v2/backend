@@ -116,7 +116,7 @@ profileRouter.get('/api/v2/profiles/myStudents', bearerAuthMiddleware, async (re
       contactId,
     } = request.profile;
 
-    const myStudentsQuery = `?q=${soql.myStudentsV2(contactId)}`; 
+    const myStudentsQuery = `?q=${soql.myStudents(contactId)}`; 
     let relatedContacts;
     try {
       relatedContacts = await superagent.get(`${queryUrl}${myStudentsQuery}`)
@@ -144,6 +144,7 @@ profileRouter.get('/api/v2/profiles/myStudents', bearerAuthMiddleware, async (re
       // const ref = student.Student__r;
       const profile = {
         id: ref.Id, 
+        accountId: ref.AccountId,
         active: true, // ref.npe4__Status__c === 'Current',
         firstName: ref.FirstName, 
         lastName: ref.LastName,
@@ -160,8 +161,10 @@ profileRouter.get('/api/v2/profiles/myStudents', bearerAuthMiddleware, async (re
           synopsisReportArchiveUrl: ref.StudentSynopsisReportArchiveUrl__c,
           googleCalendarUrl: ref.StudentGoogleCalendarUrl__c,
           googleDocsUrl: ref.StudentGoogleDocsUrl__c,
-          coaches: [],
-          sports: [],
+          synergyUsername: ref.Synergy_Username__c,
+          synergyPassword: ref.Synergy_Password__c,
+          teams: [],
+          family: [],
         },
       };
       return profile;
@@ -190,16 +193,14 @@ profileRouter.get('/api/v2/profiles/myStudents', bearerAuthMiddleware, async (re
       const teams = student.filter(aff => aff.npe5__Organization__r.Type === 'Sports Team' && aff.npe5__Status__c === 'Current')
         .map(team => ({
           student: team.npe5__Contact__r.Id,
-          coach: {
-            name: team.npe5__Organization__r.npe01__One2OneContact__r.Name,
+          team: {
+            coach: team.npe5__Organization__r.npe01__One2OneContact__r.Name,
             phone: team.npe5__Organization__r.npe01__One2OneContact__r.Phone,
             email: team.npe5__Organization__r.npe01__One2OneContact__r.Email,
             role: 'coach',
             currentCoach: true,
-          },
-          sport: {
             sport: 'not specified',
-            team: team.npe5__Organization__r.Name,
+            teamName: team.npe5__Organization__r.Name,
             league: 'not specified',
             teamCalendarUrl: 'not specified',
             currentlyPlaying: true,
@@ -212,9 +213,39 @@ profileRouter.get('/api/v2/profiles/myStudents', bearerAuthMiddleware, async (re
     teamData.forEach((student) => {  
       student.forEach((team) => { 
         const studentRef = studentContacts.find(s => s.id === team.student); 
-        studentRef.studentData.coaches.push({ coach: { ...team.coach }, currentCoach: true });
-        studentRef.studentData.sports.push({ ...team.sport });
+        studentRef.studentData.teams.push({ ...team.team });
+        // studentRef.studentData.sports.push({ ...team.sport });
       });
+    });
+
+    // fetch student family members
+    const accPromises = [];
+    studentContacts.forEach((student) => {
+      const familyQuery = `?q=${soql.studentFamilyMembers(student.accountId)}`;
+      try {
+        accPromises.push(
+          superagent.get(`${queryUrl}${familyQuery}`)
+            .set('Authorization', `Bearer ${accessToken}`),
+        );
+      } catch (err) {
+        return next(new HttpErrors(err.status, `Error retrieving family members for student ${student.id}`, { expose: false }));
+      }
+      return undefined;
+    });
+    const accBodies = await Promise.all(accPromises);
+    const accRecords = accBodies.map((b) => {
+      const accountId = b.body.records[0].Id;
+      const contacts = b.body.records[0].Contacts ? b.body.records[0].Contacts.records : [];
+      return { accountId, contacts };
+    });
+    // add family contacts to each studentContact
+    accRecords.forEach((student) => {
+      const studentRef = studentContacts.find(s => s.accountId === student.accountId);
+      student.contacts.forEach(contact => studentRef.studentData.family.push({
+        name: contact.Name,
+        email: contact.Email,
+        phone: contact.Phone,
+      }));
     });
 
     return response.json(studentContacts);
