@@ -133,7 +133,7 @@ profileRouter.get('/api/v2/profiles/myStudents', bearerAuthMiddleware, async (re
     const { records } = relatedContacts.body;
     for (let i = 0; i < records.length; i++) {
       if (uniqueStudents.has(records[i].Student__r.Id) === false
-        && records[i].Student__r.Roles__c.indexOf('Student') >= 0) {
+        && records[i].Student__r.Student__c) {
         uniqueStudents.set(records[i].Student__r.Id, records[i].Student__r);
       }
     }

@@ -34,7 +34,8 @@ export const myStudentsV2 = mentorId => (
     Student__r.FirstName,
     Student__r.LastName,
     Student__r.Name,
-    Student__r.Roles__c,
+    Student__r.Student__c,
+    Student__r.AccountId,
     Student__r.Student_Grade__c,
     Student__r.Gender__c,
     Student__r.Birthdate,
@@ -88,7 +89,6 @@ export const thisSynopsisReport = reportId => (
     Student__r.Student_Grade__c,
     Mentor_Is_Substitute__c,
     Weekly_Check_In_Status__c, 
-    Playing_Time_Only__c,
     
     Student_Touch_Points__c,
     Student_Touch_Points_Other__c,

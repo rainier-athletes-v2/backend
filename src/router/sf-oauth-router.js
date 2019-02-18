@@ -111,7 +111,7 @@ sfOAuthRouter.get('/api/v2/oauth/sf', async (request, response, next) => {
   const domain = firstDot > 0 ? process.env.CLIENT_URL.slice(firstDot) : null;
   // sf session timeout default is 2 hours so we'll use that as the cookie maxAge
   // const cookieOptions = { maxAge: 7 * 1000 * 60 * 60 * 24 }; // 7 days
-  const cookieOptions = { maxAge: 1000 * 60 * 60 * 2 };
+  const cookieOptions = { maxAge: process.env.SF_SESSION_TIMEOUT_MINUTES * 60 * 1000 };
   if (domain) cookieOptions.domain = domain;
   response.cookie('RaToken', raToken, cookieOptions);
   response.cookie('RaUser', Buffer.from(raTokenPayload.role)
