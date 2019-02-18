@@ -1,5 +1,5 @@
 // retrieve students associated with mentor
-export const myStudents = mentorId => (
+export const myStudentsV1 = mentorId => (
   `SELECT 
     Name, 
     (SELECT 
@@ -26,7 +26,7 @@ export const myStudents = mentorId => (
   WHERE Id = '${mentorId}'`
 );
 
-export const myStudentsV2 = mentorId => (
+export const myStudents = mentorId => (
   `SELECT 
     Name, 
     Id,
@@ -47,7 +47,9 @@ export const myStudentsV2 = mentorId => (
     Student__r.Email,
     Student__r.StudentGoogleCalendarUrl__c,
     Student__r.StudentGoogleDocsUrl__c,
-    Student__r.StudentSynopsisReportArchiveUrl__c
+    Student__r.StudentSynopsisReportArchiveUrl__c,
+    Student__r.Synergy_Username__c,
+    Student__r.Synergy_Password__c
   FROM SynopsisReport__c 
   WHERE SynopsisReport__c.Mentor__r.Id = '${mentorId}'`
 );
@@ -151,4 +153,19 @@ export const studentAffiliations = studentId => (
     npe5__Status__c
   FROM npe5__Affiliation__c 
   WHERE npe5__Contact__c = '${studentId}'`
+);
+
+export const studentFamilyMembers = accountId => (
+  `SELECT
+    Id, 
+    Name, 
+    (SELECT 
+      Id, 
+      Name, 
+      Email,  
+      Phone 
+    FROM Contacts 
+    WHERE Student_Family__c = TRUE)
+  FROM Account
+  Where Id = '${accountId}'`
 );
