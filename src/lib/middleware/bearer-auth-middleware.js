@@ -16,7 +16,7 @@ export default (request, response, next) => {
     .catch((error) => {
       return Promise.reject(new HttpErrors(401, `BEARER AUTH - unable to verify token ${JSON.stringify(error)}`, { expose: false }));
     })
-    .then((decryptedToken) => {;
+    .then((decryptedToken) => {
       request.profile = decryptedToken;
       return next();
     })
