@@ -28,7 +28,7 @@ sfOAuthRouter.get('/api/v2/oauth/sf', async (request, response, next) => {
     return next(new HttpErrors(err.status, 'Salesforce Oauth: error fetching authorization tokens', { expose: false }));
   }
 
-  console.log('sfTokenResponse access_token', sfTokenResponse.body.access_token);
+  console.log('>>>>>>>>> access_token', sfTokenResponse.body.access_token);
   
   if (!sfTokenResponse.body.access_token) {
     logger.log(logger.ERROR, 'No access token from Salesforce');
@@ -44,36 +44,36 @@ sfOAuthRouter.get('/api/v2/oauth/sf', async (request, response, next) => {
   try {
     idResponse = await superagent.get(idUrl).set('Authorization', `Bearer ${accessToken}`);
   } catch (err) {
-    console.log('id retrieval error', err);
+    // console.log('id retrieval error', err);
     return next(new HttpErrors(err.status, `Error retrieving id from ${idUrl}`, { expose: false }));
   }
+  const ptUpdateUrl = `${sfTokenResponse.body.instance_url}/services/data/v${process.env.SF_API_VERSION}/composite/sobjects`;
   const sobjectsUrl = idResponse.body.urls.sobjects.replace('{version}', process.env.SF_API_VERSION);
   const queryUrl = idResponse.body.urls.query.replace('{version}', process.env.SF_API_VERSION);
   const userId = idResponse.body.user_id;
   const userUrl = `${sobjectsUrl}User/${userId}`;
-  console.log('idResponse userUrl:', userUrl);
 
   // now get user data
   let userResponse;
   try {
     userResponse = await superagent.get(userUrl).set('Authorization', `Bearer ${accessToken}`);
   } catch (err) {
-    console.log('User retrieval error', err);
+    // console.log('User retrieval error', err);
     return next(new HttpErrors(err.status, `Error retrieving User info from ${sobjectsUrl}User/${userId}`, { expose: false }));
   }
   
   // now get ContactId and retrieve Contact record
   const contactId = userResponse.body.ContactId;
   const contactUrl = `${sobjectsUrl}Contact/${contactId}`;
-  console.log('userResponse contactUrl', contactUrl);
+  // console.log('userResponse contactUrl', contactUrl);
   let contactResponse;
   try {
     contactResponse = await superagent.get(contactUrl).set('Authorization', `Bearer ${accessToken}`);
   } catch (err) {
-    console.log('contact retrieval error', err);
+    // console.log('contact retrieval error', err);
     return next(new HttpErrors(err.status, `Error retrieving Contact info from ${sobjectsUrl}Contact/${contactId}`, { expose: false }));
   }
-  console.log('contactResponse Mentor__c', contactResponse.body.Mentor__c, 'Staff__c', contactResponse.body.Staff__c);
+  // console.log('contactResponse Mentor__c', contactResponse.body.Mentor__c, 'Staff__c', contactResponse.body.Staff__c);
 
   // now we can validate user's role as Mentor or Staff
   const validUser = contactResponse.body.Mentor__c || contactResponse.body.Staff__c;
@@ -93,6 +93,7 @@ sfOAuthRouter.get('/api/v2/oauth/sf', async (request, response, next) => {
     accessToken,
     sobjectsUrl,
     queryUrl,
+    ptUpdateUrl,
     role: userRole,
     contactId,
     contactUrl,
@@ -108,7 +109,9 @@ sfOAuthRouter.get('/api/v2/oauth/sf', async (request, response, next) => {
   // send raToken as cookie and in response json
   const firstDot = process.env.CLIENT_URL.indexOf('.');
   const domain = firstDot > 0 ? process.env.CLIENT_URL.slice(firstDot) : null;
-  const cookieOptions = { maxAge: 7 * 1000 * 60 * 60 * 24 };
+  // sf session timeout default is 2 hours so we'll use that as the cookie maxAge
+  // const cookieOptions = { maxAge: 7 * 1000 * 60 * 60 * 24 }; // 7 days
+  const cookieOptions = { maxAge: process.env.SF_SESSION_TIMEOUT_MINUTES * 60 * 1000 };
   if (domain) cookieOptions.domain = domain;
   response.cookie('RaToken', raToken, cookieOptions);
   response.cookie('RaUser', Buffer.from(raTokenPayload.role)

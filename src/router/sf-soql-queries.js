@@ -6,6 +6,7 @@ export const myStudents = mentorId => (
       npe4__RelatedContact__r.Id,
       npe4__RelatedContact__r.FirstName,
       npe4__RelatedContact__r.LastName,
+      npe4__RelatedCOntact__r.Name,
       npe4__RelatedContact__r.Student_Grade__c,
       npe4__RelatedContact__r.Gender__c,
       npe4__RelatedContact__r.Birthdate,
@@ -25,6 +26,32 @@ export const myStudents = mentorId => (
   WHERE Id = '${mentorId}'`
 );
 
+export const myStudentsV2 = mentorId => (
+  `SELECT 
+    Name, 
+    Id,
+    Student__r.Id,
+    Student__r.FirstName,
+    Student__r.LastName,
+    Student__r.Name,
+    Student__r.Student__c,
+    Student__r.AccountId,
+    Student__r.Student_Grade__c,
+    Student__r.Gender__c,
+    Student__r.Birthdate,
+    Student__r.Student_ID__c,
+    Student__r.npe01__PreferredPhone__c,
+    Student__r.Phone,
+    Student__r.HomePhone,
+    Student__r.MobilePhone,
+    Student__r.Email,
+    Student__r.StudentGoogleCalendarUrl__c,
+    Student__r.StudentGoogleDocsUrl__c,
+    Student__r.StudentSynopsisReportArchiveUrl__c
+  FROM SynopsisReport__c 
+  WHERE SynopsisReport__c.Mentor__r.Id = '${mentorId}'`
+);
+
 export const classSchedule = studentId => (
   `SELECT 
     Name, 
@@ -39,12 +66,15 @@ export const classSchedule = studentId => (
 // retrieve top 5 latest synopsis reports for initial mentor selection
 export const recentSynopsisReports = studentId => (
   `SELECT 
-    Id, 
+    Id,
+    Name,
     Point_Sheet_Status__c,
-    Start_Date__c 
+    Synopsis_Report_Status__c,
+    Start_Date__c,
+    Week__c
   FROM SynopsisReport__c 
   WHERE Student__c = '${studentId}' 
-  ORDER BY Start_Date__c DESC LIMIT 5`
+  ORDER BY Start_Date__c DESC LIMIT 3`
 );
 
 // retrieve data for the synopsis report with id = <id>. Needs to have more fields addded to get complete SR/PT built.
@@ -53,13 +83,12 @@ export const thisSynopsisReport = reportId => (
     Id,
     Name,
     Week__c,
-    Start_date__c,
+    Start_Date__c,
     Synopsis_Report_Status__c,
     Student__r.Name,
-    Mentor__r.Name,
+    Student__r.Student_Grade__c,
     Mentor_Is_Substitute__c,
     Weekly_Check_In_Status__c, 
-    Playing_Time_Only__c,
     
     Student_Touch_Points__c,
     Student_Touch_Points_Other__c,
@@ -98,10 +127,12 @@ export const thisSynopsisReport = reportId => (
       Half_Stamps__c,
       Class__r.Name,
       Class__r.Period__c,
-      Class__r.Teacher__r.Name
+      Class__r.Teacher__r.Name,
+      Class__r.Teacher__r.LastName,
+      Class__r.School__r.Name
     FROM PointTrackers__r) 
   FROM SynopsisReport__c 
-  WHERE Id = '${reportId}`
+  WHERE Id = '${reportId}'`
 );
 
 // retrieve student's team affiliation
