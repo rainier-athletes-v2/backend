@@ -6,9 +6,9 @@ import uuid from 'uuid/v4';
 import bearerAuthMiddleware from '../lib/middleware/bearer-auth-middleware';
 import createGoogleDriveFunction from '../lib/googleDriveLib';
 
-const synopsisRouter = new Router();
+const synopsisPdfRouter = new Router();
 
-synopsisRouter.post('/api/v1/synopsis', bearerAuthMiddleware, async (request, response, next) => {
+synopsisPdfRouter.post('/api/v2/synopsispdf', bearerAuthMiddleware, async (request, response, next) => {
   const name = typeof request.body.name === 'string' && request.body.name !== '' ? request.body.name : false;
   let title = typeof request.body.title === 'string' && request.body.title !== '' ? request.body.title : false;
   const html = typeof request.body.html === 'string' && request.body.html !== '' ? request.body.html : false;
@@ -59,4 +59,4 @@ synopsisRouter.post('/api/v1/synopsis', bearerAuthMiddleware, async (request, re
   return undefined; // to satisfy linter...
 });
 
-export default synopsisRouter;
+export default synopsisPdfRouter;
