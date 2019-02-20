@@ -5,7 +5,9 @@ src/temp/*
 build/
 **/temp/*
 .env
-
+server.crt 
+server.csr 
+server.pem
 coverage
 
 # Created by https://www.gitignore.io/api/node,macos,visualstudiocode

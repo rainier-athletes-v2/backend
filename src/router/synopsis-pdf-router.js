@@ -6,32 +6,32 @@ import uuid from 'uuid/v4';
 import bearerAuthMiddleware from '../lib/middleware/bearer-auth-middleware';
 import createGoogleDriveFunction from '../lib/googleDriveLib';
 
-const synopsisRouter = new Router();
+const synopsisPdfRouter = new Router();
 
-synopsisRouter.post('/api/v1/synopsis', bearerAuthMiddleware, async (request, response, next) => {
-  const name = typeof request.body.name === 'string' && request.body.name !== '' ? request.body.name : false;
-  let title = typeof request.body.title === 'string' && request.body.title !== '' ? request.body.title : false;
+synopsisPdfRouter.post('/api/v2/synopsispdf', bearerAuthMiddleware, async (request, response, next) => {
+  const name = typeof request.body.name === 'string' && request.body.name !== '' ? request.body.name.replace(/[^A-Za-z0-9]/gi, '_') : false;
+  const school = typeof request.body.school === 'string' && request.body.school !== '' ? request.body.school.replace(/[^A-Za-z0-9]/gi, '_') : false;
+  const title = typeof request.body.title === 'string' && request.body.title !== '' ? request.body.title : false;
   const html = typeof request.body.html === 'string' && request.body.html !== '' ? request.body.html : false;
-  if (!(name && html && title)) return next(new HttpError(400, 'Missing or invalid name, title or html parameters on request body', { expose: false }));
-
-  title += '.pdf';
-  const { googleTokenResponse } = request;
-  const setFolderName = `RA Reports for ${name}`;
-  const TEMP_FILE = `${__dirname}/${uuid()}.pdf`;
-
+  if (!(name && school && html && title)) return next(new HttpError(400, 'Missing or invalid name, school, title or html parameters on request body', { expose: false }));
+  
   const oAuth2Client = new google.auth.OAuth2(
     process.env.GOOGLE_OAUTH_ID,
     process.env.GOOGLE_OAUTH_SECRET,
     `${process.env.API_URL}/oauth/google email profile openid`,
   );
 
-  // this is what the drive example does once it
-  // has a token. sends the whole object to setCreds
-  oAuth2Client.setCredentials(googleTokenResponse);
+  oAuth2Client.setCredentials(request.profile.googleTokenResponse);
 
-  const drive = google.drive({ version: 'v3', auth: oAuth2Client });
+  const googleDrive = google.drive({ version: 'v3', auth: oAuth2Client });
 
-  const sendFileToGoogleDrive = createGoogleDriveFunction(drive, TEMP_FILE, title, setFolderName, response, next);
+  // const { googleDrive } = request.profile;
+  const studentFolderName = name;
+  const schoolFolderName = school;
+  const pdfName = `${title}.pdf`;
+  const TEMP_FILE = `${__dirname}/${uuid()}.pdf`;
+
+  const sendFileToGoogleDrive = createGoogleDriveFunction(googleDrive, TEMP_FILE, pdfName, schoolFolderName, studentFolderName, response, next);
 
   const options = {
     border: {
@@ -59,4 +59,4 @@ synopsisRouter.post('/api/v1/synopsis', bearerAuthMiddleware, async (request, re
   return undefined; // to satisfy linter...
 });
 
-export default synopsisRouter;
+export default synopsisPdfRouter;
