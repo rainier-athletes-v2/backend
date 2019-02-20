@@ -2,7 +2,7 @@ import { Router } from 'express';
 import HttpErrors from 'http-errors';
 import superagent from 'superagent';
 import bearerAuthMiddleware from '../lib/middleware/bearer-auth-middleware';
-import * as soql from './sf-soql-queries';
+import * as soql from '../lib/sf-soql-queries';
 
 const synopsisReportRouter = new Router();
 

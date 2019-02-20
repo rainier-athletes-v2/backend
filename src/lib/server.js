@@ -1,5 +1,4 @@
 import express from 'express';
-// import mongoose from 'mongoose';
 import cors from 'cors';
 import HttpError from 'http-errors';
 import logger from './logger';
@@ -13,10 +12,6 @@ import sfOauthRouter from '../router/sf-oauth-router';
 import profileRouter from '../router/profile-router';
 import synopsisReportRouter from '../router/synopsis-report-router';
 import synopsisPdfRouter from '../router/synopsis-pdf-router';
-import relationshipRouter from '../router/relationship-router';
-import extractRouter from '../router/extract-router';
-import studentDataRouter from '../router/student-data-router';
-import scheduleRouter from '../router/class-schedule-router';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -47,12 +42,8 @@ app.use(express.json());
 app.use(loggerMiddleware);
 app.use(sfOauthRouter);
 app.use(profileRouter);
-app.use(studentDataRouter);
-app.use(scheduleRouter);
 app.use(synopsisReportRouter);
 app.use(synopsisPdfRouter);
-app.use(extractRouter);
-app.use(relationshipRouter);
 
 app.all('*', (request, response, next) => {
   logger.log(logger.INFO, 'returning 404 from the catch/all route');
@@ -62,25 +53,13 @@ app.all('*', (request, response, next) => {
 app.use(errorMiddleware);
 
 const startServer = () => {
-  // return mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true })
-  //   .then(() => {
-      server = app.listen(PORT, () => {
-        console.log(`Server up on port ${PORT}`);
-      });
-    // })
-    // .catch((err) => {
-    //   throw err;
-    // });
+  server = app.listen(PORT, () => {
+    console.log(`Server up on port ${PORT}`);
+  });
 };
 
 const stopServer = () => {
-  // return mongoose.disconnect()
-  //   .then(() => {
-      server.close();
-    // })
-    // .catch((err) => {
-    //   throw err;
-    // });
+  server.close();
 };
 
 export { startServer, stopServer };
