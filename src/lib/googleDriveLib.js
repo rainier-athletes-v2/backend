@@ -5,11 +5,63 @@ import fs from 'fs';
 import logger from './logger';
 
 // common code used by extract-router and synopsys-router to send file to google drive
-// const sendFileToGoogleDrive = async () => {
-const createGoogleDriveFunction = (drive, TEMP_FILE, extractName, folderName, response, next) => async () => {
+
+const createGoogleDriveFunction = (drive, TEMP_FILE, pdfName, schoolFolder, studentFolder, response, next) => async () => {
   const filePath = TEMP_FILE;
 
-  const uploadFileToFolder = async (folderId) => {
+  const _getFolderId = async (folderName, parentFolderId = null) => {
+    let driveListQuery = `name='${folderName}' and trashed = false`;
+    driveListQuery += parentFolderId ? ` and '${parentFolderId}' in parents` : '';
+    let res;
+    try {
+      res = await drive.files.list({ 
+        mimeType: 'application/vnd.google-apps.folder',
+        q: driveListQuery,
+      }); 
+    } catch (err) {
+      logger.log(logger.ERROR, `${err.status}: Error retrieving drive file list.`); 
+      return null; // next(new HttpError(err.status, 'Error retrieving drive file list. Likely bad OAuth.'));
+    }
+  
+    // if we didn't catch an error above then oauth is good. Subsequent errors will be status 500
+    let returnFolderId;
+    if (res.data.files[0]) {
+      // folder exists
+      returnFolderId = res.data.files[0].id;     
+    } else {  
+      // create the folder
+      const folderMetadata = {
+        name: folderName,
+        mimeType: 'application/vnd.google-apps.folder',
+        fields: 'id',
+      };
+      if (parentFolderId) {
+        folderMetadata.parents = [parentFolderId];
+      }
+
+      let file;
+      try {
+        file = await drive.files.create({
+          resource: folderMetadata,
+        });
+      } catch (error) {
+        // Handle error
+        logger.log(logger.ERROR, `Error creating creating folder ${error}`);
+        return null;
+      }
+      returnFolderId = file.data.id; 
+    }
+    return returnFolderId;
+  };
+
+  const _unlink = async (fileName) => {
+    await fs.unlink(fileName, (err) => {
+      if (err) return logger.log(`fs.unlink error on ${fileName}: ${err}`);
+      return undefined;
+    });  
+  };
+
+  const _uploadFileToFolder = async (folderId) => {
     let readStream;
     try {
       readStream = await fs.createReadStream(filePath);
@@ -19,19 +71,19 @@ const createGoogleDriveFunction = (drive, TEMP_FILE, extractName, folderName, re
     }
 
     // once folder is created, upload file to it 
-    const fileMetadata = {
-      name: `${extractName}`,
+    const resource = {
+      name: `${pdfName}`,
       writersCanShare: true,
       parents: [folderId],
     };
 
     const media = {
-      mimeType: extractName.indexOf('.csv') > 0 ? 'text/csv' : 'application/pdf',
+      mimeType: 'application/pdf',
       body: readStream,
     };
 
     const params = {
-      resource: fileMetadata,
+      resource,
       media,
     };
     let result;
@@ -70,19 +122,16 @@ const createGoogleDriveFunction = (drive, TEMP_FILE, extractName, folderName, re
       // this is our success response:
       return response.json(metaData.data).status(200);
     });
-    // or, when testing
-    // console.log('should be unlinking temp file', TEMP_FILE);
-    // return response.json(metaData.data).status(200);
 
     return undefined; // to satisfy linter
-  }; // end uploadFileToFolder
+  }; // end _uploadFileToFolder
 
   // see if extract file exists. delete it if it does.
   let fileResult;
   try {
     fileResult = await drive.files.list({ 
       mimeType: 'application/vnd.google-apps.file',
-      q: `name='${extractName}' and trashed = false`,
+      q: `name='${pdfName}' and trashed = false`,
     }); 
   } catch (err) {
     logger.log(logger.ERROR, `Error retrieving drive file list ${err}`);
@@ -102,49 +151,21 @@ const createGoogleDriveFunction = (drive, TEMP_FILE, extractName, folderName, re
     }
   }
 
-  // see if extract folder exists. if not, create it.
-  let res;
-  const folderMetadata = {
-    name: folderName,
-    mimeType: 'application/vnd.google-apps.folder',
-    fields: 'id',
-  };
-  try {
-    res = await drive.files.list({ 
-      mimeType: 'application/vnd.google-apps.folder',
-      q: `name='${folderName}' and trashed = false`,
-    }); 
-  } catch (err) {
-    logger.log(logger.ERROR, `Error retrieving drive file list ${err}`);
-    // delete temp file then return error response
-    await fs.unlink(TEMP_FILE, (derr) => {
-      if (derr) return logger.log(`OAuth error as well as fs.unlink error: ${derr}`);
-      return undefined;
-    });      
-    return next(new HttpError(401, 'Error retrieving drive file list. Likely bad OAuth.'));
+  // see if school folder exists. if not, create it.
+  const schoolFolderId = await _getFolderId(schoolFolder);
+  if (!schoolFolderId) {
+    await _unlink(TEMP_FILE);
+    return next(new HttpError(500, 'Error retrieving school folder ID.'));
   }
 
-  // if we didn't catch an error above then oauth is good. Subsequent errors will be status 500
-  let folderId;
-  if (res.data.files[0]) {
-    // folder exists
-    folderId = res.data.files[0].id;     
-  } else {  
-    // create the folder
-    let file;
-    try {
-      file = await drive.files.create({
-        resource: folderMetadata,
-      });
-    } catch (error) {
-      // Handle error
-      logger.log(logger.ERROR, `Error creating creating folder ${error}`);
-      return next(new HttpError(500, `Error creating creating folder ${error}`));
-    }
-    folderId = file.data.id; 
+  // see if student folder exists in school folder. if not, create it in school folder.
+  const studentFolderId = await _getFolderId(studentFolder, schoolFolderId);
+  if (!studentFolderId) {
+    await _unlink(TEMP_FILE);
+    return next(new HttpError(500, 'Error retrieving student folder ID.'));
   }
 
-  return uploadFileToFolder(folderId);
+  return _uploadFileToFolder(studentFolderId);
 }; // end of sendFileToGoogleDrive
 
 export default createGoogleDriveFunction;

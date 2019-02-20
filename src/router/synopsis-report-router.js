@@ -1,8 +1,6 @@
 import { Router } from 'express';
 import HttpErrors from 'http-errors';
 import superagent from 'superagent';
-import PointTracker from '../model/point-tracker';
-import StudentData from '../model/student-data';
 import bearerAuthMiddleware from '../lib/middleware/bearer-auth-middleware';
 import * as soql from './sf-soql-queries';
 
@@ -124,81 +122,6 @@ synopsisReportRouter.put('/api/v2/synopsisreport', bearerAuthMiddleware, async (
     return response.sendStatus(204);
   }
   return next(new HttpErrors(500, `Failure saving point trackers for SR ${srName}`, { expose: false }));
-});
-
-synopsisReportRouter.post('/api/v1/pointstracker', bearerAuthMiddleware, (request, response, next) => {
-  if (!request.body) return next(new HttpErrors(400, 'POINT-TRACKER ROUTER POST: Missing request body', { expose: false }));
-
-  PointTracker.init()
-    .then(() => {
-      // find and remove any existing PT with the same title as on the request
-      return PointTracker.findOneAndRemove({ title: request.body.title });
-    })
-    .then(() => {
-      // get student's data from mongo
-      return StudentData.findOne({ student: request.body.student });
-    })
-    .then((studentData) => {
-      if (!studentData) return next(new HttpErrors(400, 'POINT-TRACKER ROUTER POST: Missing student id in req body', { expose: false }));
-      
-      // get student's current mentor _id
-      const currentMentor = studentData.mentors.find(m => m.currentMentor);
-      let currentMentorId;
-      if (currentMentor) currentMentorId = currentMentor.mentor._id;
-
-      if (currentMentorId && currentMentorId.toString() !== request.profile._id.toString()) {
-        request.body.mentorIsSubstitute = true;
-        request.body.mentor = request.profile._id.toString();
-      } else if (currentMentorId) {
-        // submitter isn't a sub. Get mentor ID from student's profile
-        const [mentors] = studentData.mentors.filter(m => m.currentMentor);
-        request.body.mentor = mentors.mentor._id.toString(); // findById autopopulates so id is the mentor, not just id.
-        request.body.mentorIsSubstitute = false;
-      }
-      // set timestamps
-      request.body.createdAt = new Date();
-      request.body.updatedAt = request.body.createdAt;
-      return new PointTracker(request.body).save();
-    })
-    .then((pointstracker) => {
-      return response.json(pointstracker);
-    })
-    .catch(next);
-  return undefined;
-});
-
-synopsisReportRouter.put('/api/v1/pointstracker', bearerAuthMiddleware, (request, response, next) => {
-  if (!request.body._id) return next(new HttpErrors(400, 'POINT-TRACKER ROUTER PUT: Missing request body', { expose: false }));
-  
-  PointTracker.init()
-    .then(() => {
-      return PointTracker.findOneAndUpdate(request.body);
-    })
-    .then((result) => {
-      if (!result) return next(new HttpErrors(404, 'Unable to update point tracker'));
-      return PointTracker.findById(request.body._id.toString());
-    })
-    .then((tracker) => {
-      tracker.updatedAt = new Date();
-      return tracker.save();
-    })
-    .then((updated) => {
-      if (!updated) return next(new HttpErrors(500, 'Unable to retrieve updated point tracker'));
-      return response.json(updated).status(200);
-    })
-    .catch(next);
-  return undefined;
-});
-
-synopsisReportRouter.delete('/api/v1/pointstracker', bearerAuthMiddleware, (request, response, next) => {
-  if (!request.query.id) return next(new HttpErrors(400, 'DELETE POINT-TRACKER ROUTER: bad query', { expose: false }));
-
-  PointTracker.init()
-    .then(() => {
-      return PointTracker.findByIdAndRemove(request.query.id);
-    })
-    .catch(next);
-  return response.sendStatus(200);
 });
 
 export default synopsisReportRouter;
