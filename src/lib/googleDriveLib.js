@@ -4,6 +4,8 @@ import fs from 'fs';
 
 import logger from './logger';
 
+require('dotenv').config();
+
 // common code used by extract-router and synopsys-router to send file to google drive
 
 const createGoogleDriveFunction = (drive, TEMP_FILE, pdfName, schoolFolder, studentFolder, response, next) => async () => {
@@ -151,8 +153,15 @@ const createGoogleDriveFunction = (drive, TEMP_FILE, pdfName, schoolFolder, stud
     }
   }
 
+  // get folder ID of SR archive folder (shared root folder of archive)
+  const archiveFolderId = await _getFolderId(process.env.SYNOPSIS_REPORT_ARCHIVE);
+  if (!archiveFolderId) {
+    await _unlink(TEMP_FILE);
+    return next(new HttpError(500, 'Error retrieving archive folder ID.'));
+  }
+
   // see if school folder exists. if not, create it.
-  const schoolFolderId = await _getFolderId(schoolFolder);
+  const schoolFolderId = await _getFolderId(schoolFolder, archiveFolderId);
   if (!schoolFolderId) {
     await _unlink(TEMP_FILE);
     return next(new HttpError(500, 'Error retrieving school folder ID.'));
