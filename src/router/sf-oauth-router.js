@@ -2,6 +2,7 @@ import { Router } from 'express';
 import superagent from 'superagent';
 import HttpErrors from 'http-errors';
 import jsonWebToken from 'jsonwebtoken';
+// import { google } from 'googleapis';
 import logger from '../lib/logger';
 
 require('dotenv').config();
@@ -29,6 +30,7 @@ sfOAuthRouter.get('/api/v2/oauth/sf', async (request, response, next) => {
   }
 
   console.log('>>>>>>>>> access_token', sfTokenResponse.body.access_token);
+  // console.log('********* refresh_token:', sfTokenResponse.body.refresh_token);
   
   if (!sfTokenResponse.body.access_token) {
     logger.log(logger.ERROR, 'No access token from Salesforce');
@@ -36,6 +38,22 @@ sfOAuthRouter.get('/api/v2/oauth/sf', async (request, response, next) => {
   }
 
   const accessToken = sfTokenResponse.body.access_token;
+
+  // try using the refresh token
+  // let refreshResponse;
+  // try {
+  //   refreshResponse = await superagent.post(process.env.SF_OAUTH_TOKEN_URL)
+  //     .type('form')
+  //     .send({
+  //       grant_type: 'refresh_token',
+  //       refresh_token: sfTokenResponse.body.refresh_token,
+  //       client_id: process.env.SF_OAUTH_ID,
+  //     });
+  // } catch (err) {
+  //   console.log('use of refresh token failed', err);
+  // }
+  // console.log('refresh token response body', refreshResponse.body);
+
 
   // we have credentials now. Need to drill down to user's Contact record to verify their role(s).
   // first, use id url to retrieve their user_id and sobjects url
@@ -80,7 +98,7 @@ sfOAuthRouter.get('/api/v2/oauth/sf', async (request, response, next) => {
   if (!validUser) {
     return next(new HttpErrors(401, 'User not authorized.', { expose: false }));
   }
-  logger.log(logger.INFO, 'User validated as Mentor and/or Staff');
+  // logger.log(logger.INFO, 'User validated as Mentor and/or Staff');
 
   // user is validated.  Build object for use creating raToken
   let userRole = 'unauthorized';
@@ -89,6 +107,22 @@ sfOAuthRouter.get('/api/v2/oauth/sf', async (request, response, next) => {
   } else if (contactResponse.body.Mentor__c) {
     userRole = 'mentor';
   }
+
+  // get google drive authorization while we're logging in to save time later
+  let googleResult;
+  try {
+    googleResult = await superagent.post('https://www.googleapis.com/oauth2/v4/token')
+      .send({
+        refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
+        client_id: process.env.GOOGLE_OAUTH_ID,
+        client_secret: process.env.GOOGLE_OAUTH_SECRET,
+        grant_type: 'refresh_token',
+      });
+  } catch (err) {
+    return next(new HttpErrors(err.status, 'Unable to obtain Google access token', { expose: false }));
+  }
+  const googleTokenResponse = googleResult.body;
+
   const raTokenPayload = {
     accessToken,
     sobjectsUrl,
@@ -101,8 +135,9 @@ sfOAuthRouter.get('/api/v2/oauth/sf', async (request, response, next) => {
     userUrl,
     firstName: idResponse.body.first_name,
     lastName: idResponse.body.last_name,
+    googleTokenResponse,
   };
-  console.log('raTokenPayload.accessToken', raTokenPayload.accessToken);
+  // console.log('raTokenPayload.accessToken', raTokenPayload.accessToken);
   
   const raToken = jsonWebToken.sign(raTokenPayload, process.env.SECRET);
 
