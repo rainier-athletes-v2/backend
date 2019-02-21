@@ -120,6 +120,9 @@ export const thisSynopsisReport = reportId => (
     Sports_Update__c,
     Additional_Comments__c,
 
+    Mentor_Support_Request__c,
+    Mentor_Support_Request_Notes__c,
+    
     (SELECT 
       Id, 
       Name, 
