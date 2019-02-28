@@ -49,7 +49,10 @@ export const myStudents = mentorId => (
     Student__r.StudentGoogleDocsUrl__c,
     Student__r.StudentSynopsisReportArchiveUrl__c,
     Student__r.Synergy_Username__c,
-    Student__r.Synergy_Password__c
+    Student__r.Synergy_Password__c,
+    (SELECT 
+      Class__r.School__r.Name
+    FROM PointTrackers__r order by CreatedDate DESC LIMIT 1)
   FROM SynopsisReport__c 
   WHERE SynopsisReport__c.Mentor__r.Id = '${mentorId}'`
 );
