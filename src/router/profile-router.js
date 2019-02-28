@@ -49,14 +49,14 @@ profileRouter.get('/api/v2/profiles/myStudents', bearerAuthMiddleware, async (re
     for (let i = 0; i < records.length; i++) {
       if (uniqueStudents.has(records[i].Student__r.Id) === false
         && records[i].Student__r.Student__c) {
-        uniqueStudents.set(records[i].Student__r.Id, records[i].Student__r);
+        uniqueStudents.set(records[i].Student__r.Id, { student: records[i].Student__r, pointTracker: records[i].PointTrackers__r });
       }
     }
     // console.log(uniqueStudents);
     // const studentContacts = relatedContacts.body.records[0].npe4__Relationships__r.records.map((student) => {
     const studentsArray = [...uniqueStudents.values()];
-    const studentContacts = studentsArray.map((ref) => {
-      // const ref = student.Student__r;
+    const studentContacts = studentsArray.map((studentObj) => {
+      const ref = studentObj.student;
       const profile = {
         id: ref.Id, 
         accountId: ref.AccountId,
@@ -78,6 +78,7 @@ profileRouter.get('/api/v2/profiles/myStudents', bearerAuthMiddleware, async (re
           googleDocsUrl: ref.StudentGoogleDocsUrl__c,
           synergyUsername: ref.Synergy_Username__c,
           synergyPassword: ref.Synergy_Password__c,
+          schoolName: studentObj.pointTracker.totalSize ? studentObj.pointTracker.records[0].Class__r.School__r.Name : '',
           teams: [],
           family: [],
         },
