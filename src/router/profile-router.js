@@ -75,7 +75,6 @@ profileRouter.get('/api/v2/profiles/myStudents', bearerAuthMiddleware, async (re
           schoolId: ref.Student_ID__c,
           synopsisReportArchiveUrl: ref.StudentSynopsisReportArchiveUrl__c,
           googleCalendarUrl: ref.StudentGoogleCalendarUrl__c,
-          googleDocsUrl: ref.StudentGoogleDocsUrl__c,
           synergyUsername: ref.Synergy_Username__c,
           synergyPassword: ref.Synergy_Password__c,
           schoolName: studentObj.pointTracker.totalSize ? studentObj.pointTracker.records[0].Class__r.School__r.Name : '',
