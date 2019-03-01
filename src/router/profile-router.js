@@ -88,7 +88,7 @@ profileRouter.get('/api/v2/profiles/myStudents', bearerAuthMiddleware, async (re
     // fetch student team info
     const affPromises = [];
     studentContacts.forEach((student) => {
-      const affiliationsQuery = `?q=${soql.studentAffiliations(student.id)}`;
+      const affiliationsQuery = `?q=${soql.studentTeamAffiliations(student.id)}`;
       try {
         affPromises.push(
           superagent.get(`${queryUrl}${affiliationsQuery}`)
@@ -104,23 +104,22 @@ profileRouter.get('/api/v2/profiles/myStudents', bearerAuthMiddleware, async (re
     // console.log(JSON.stringify(affRecords, null, 2));
     const teamData = [];
     affRecords.forEach((student) => {
-      // student is an array of affiliation objects. find the teams
-      const teams = student.filter(aff => aff.npe5__Organization__r.Type === 'Sports Team' && aff.npe5__Status__c === 'Current')
-        .map(team => ({
-          student: team.npe5__Contact__r.Id,
-          team: {
-            coach: team.npe5__Organization__r.npe01__One2OneContact__r.Name,
-            phone: team.npe5__Organization__r.npe01__One2OneContact__r.Phone,
-            email: team.npe5__Organization__r.npe01__One2OneContact__r.Email,
-            role: 'coach',
-            currentCoach: true,
-            sport: 'not specified',
-            teamName: team.npe5__Organization__r.Name,
-            league: 'not specified',
-            teamCalendarUrl: 'not specified',
-            currentlyPlaying: true,
-          },
-        }));
+      // student is an array of affiliation objects. Query returns only current teams with end date >= today
+      const teams = student.map(team => ({
+        student: team.npe5__Contact__r.Id,
+        team: {
+          coach: team.npe5__Organization__r.npe01__One2OneContact__r.Name,
+          phone: team.npe5__Organization__r.npe01__One2OneContact__r.Phone,
+          email: team.npe5__Organization__r.npe01__One2OneContact__r.Email,
+          role: 'coach',
+          currentCoach: true,
+          sport: 'not specified',
+          teamName: team.npe5__Organization__r.Name,
+          league: 'not specified',
+          teamCalendarUrl: 'not specified',
+          currentlyPlaying: true,
+        },
+      }));
       teamData.push(teams);
     });
 
