@@ -143,7 +143,7 @@ export const thisSynopsisReport = reportId => (
 );
 
 // retrieve student's team affiliation
-export const studentAffiliations = studentId => (
+export const studentTeamAffiliations = studentId => (
   `SELECT 
     Id, 
     Name, 
@@ -157,7 +157,10 @@ export const studentAffiliations = studentId => (
     npe5__Role__c,
     npe5__Status__c
   FROM npe5__Affiliation__c 
-  WHERE npe5__Contact__c = '${studentId}'`
+  WHERE npe5__Organization__r.Type = 'Sports Team'
+    AND (npe5__EndDate__c > TODAY OR npe5__EndDate__c = TODAY)
+    AND npe5__Status__c = 'Current'
+    AND npe5__Contact__c = '${studentId}'`
 );
 
 export const studentFamilyMembers = accountId => (
