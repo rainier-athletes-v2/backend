@@ -1,31 +1,4 @@
 // retrieve students associated with mentor
-export const myStudentsV1 = mentorId => (
-  `SELECT 
-    Name, 
-    (SELECT 
-      npe4__RelatedContact__r.Id,
-      npe4__RelatedContact__r.FirstName,
-      npe4__RelatedContact__r.LastName,
-      npe4__RelatedCOntact__r.Name,
-      npe4__RelatedContact__r.Student_Grade__c,
-      npe4__RelatedContact__r.Gender__c,
-      npe4__RelatedContact__r.Birthdate,
-      npe4__RelatedContact__r.Student_ID__c,
-      npe4__RelatedContact__r.npe01__PreferredPhone__c,
-      npe4__RelatedContact__r.Phone,
-      npe4__RelatedContact__r.HomePhone,
-      npe4__RelatedContact__r.MobilePhone,
-      npe4__RelatedContact__r.Email,
-      npe4__RelatedContact__r.StudentGoogleCalendarUrl__c,
-      npe4__RelatedContact__r.StudentGoogleDocsUrl__c,
-      npe4__RelatedContact__r.StudentSynopsisReportArchiveUrl__c,
-      npe4__Type__c, 
-      npe4__Status__c
-    FROM npe4__Relationships__r) 
-  FROM Contact 
-  WHERE Id = '${mentorId}'`
-);
-
 export const myStudents = mentorId => (
   `SELECT 
     Name, 
@@ -53,7 +26,8 @@ export const myStudents = mentorId => (
       Class__r.School__r.Name
     FROM PointTrackers__r order by CreatedDate DESC LIMIT 1)
   FROM SynopsisReport__c 
-  WHERE SynopsisReport__c.Mentor__r.Id = '${mentorId}'`
+  WHERE SynopsisReport__c.Start_Date__c > N_DAYS_AGO:14
+    ANd SynopsisReport__c.Mentor__r.Id = '${mentorId}'`
 );
 
 export const classSchedule = studentId => (

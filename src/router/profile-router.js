@@ -40,9 +40,6 @@ profileRouter.get('/api/v2/profiles/myStudents', bearerAuthMiddleware, async (re
       return next(new HttpErrors(err.status, `Error retrieving myStudents for contact ${request.profile.contactId}`, { expose: false }));
     }
 
-    // if (relatedContacts.body.totalSize > 1) {
-    //   return next(new HttpErrors(500, `myStudents unexpected response length of ${relatedContacts.body.totalSize}`, { expose: false }));
-    // }
     // filter down to unique students
     const uniqueStudents = new Map();
     const { records } = relatedContacts.body;
