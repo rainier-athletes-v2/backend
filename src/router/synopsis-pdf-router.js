@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { google } from 'googleapis';
+import superagent from 'superagent';
 import HttpError from 'http-errors';
 import pdf from 'html-pdf';
 import uuid from 'uuid/v4';
@@ -15,13 +16,28 @@ synopsisPdfRouter.post('/api/v2/synopsispdf', bearerAuthMiddleware, async (reque
   const html = typeof request.body.html === 'string' && request.body.html !== '' ? request.body.html : false;
   if (!(name && school && html && title)) return next(new HttpError(400, 'Missing or invalid name, school, title or html parameters on request body', { expose: false }));
   
+  let googleResult;
+  try {
+    googleResult = await superagent.post('https://www.googleapis.com/oauth2/v4/token')
+      .send({
+        refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
+        client_id: process.env.GOOGLE_OAUTH_ID,
+        client_secret: process.env.GOOGLE_OAUTH_SECRET,
+        grant_type: 'refresh_token',
+      });
+  } catch (err) {
+    return next(new HttpError(err.status, 'Unable to obtain Google access token', { expose: false }));
+  }
+
+  const googleTokenResponse = googleResult.body;
+
   const oAuth2Client = new google.auth.OAuth2(
     process.env.GOOGLE_OAUTH_ID,
     process.env.GOOGLE_OAUTH_SECRET,
     `${process.env.API_URL}/oauth/google email profile openid`,
   );
 
-  oAuth2Client.setCredentials(request.profile.googleTokenResponse);
+  oAuth2Client.setCredentials(googleTokenResponse);
 
   const googleDrive = google.drive({ version: 'v3', auth: oAuth2Client });
 

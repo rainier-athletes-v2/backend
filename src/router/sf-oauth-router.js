@@ -108,21 +108,6 @@ sfOAuthRouter.get('/api/v2/oauth/sf', async (request, response, next) => {
     userRole = 'mentor';
   }
 
-  // get google drive authorization while we're logging in to save time later
-  let googleResult;
-  try {
-    googleResult = await superagent.post('https://www.googleapis.com/oauth2/v4/token')
-      .send({
-        refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
-        client_id: process.env.GOOGLE_OAUTH_ID,
-        client_secret: process.env.GOOGLE_OAUTH_SECRET,
-        grant_type: 'refresh_token',
-      });
-  } catch (err) {
-    return next(new HttpErrors(err.status, 'Unable to obtain Google access token', { expose: false }));
-  }
-  const googleTokenResponse = googleResult.body;
-
   const raTokenPayload = {
     accessToken,
     sobjectsUrl,
@@ -135,9 +120,7 @@ sfOAuthRouter.get('/api/v2/oauth/sf', async (request, response, next) => {
     userUrl,
     firstName: idResponse.body.first_name,
     lastName: idResponse.body.last_name,
-    googleTokenResponse,
   };
-  // console.log('raTokenPayload.accessToken', raTokenPayload.accessToken);
   
   const raToken = jsonWebToken.sign(raTokenPayload, process.env.SECRET);
 
