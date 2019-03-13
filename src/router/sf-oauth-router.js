@@ -134,7 +134,7 @@ sfOAuthRouter.get('/api/v2/oauth/sf', async (request, response, next) => {
   response.cookie('RaToken', raToken, cookieOptions);
   response.cookie('RaUser', Buffer.from(raTokenPayload.role)
     .toString('base64'), cookieOptions);
-  return response.redirect(`${process.env.CLIENT_URL}#GET-TOKEN`);
+  return response.redirect(`${process.env.CLIENT_URL}`);
 });
 
 export default sfOAuthRouter;
