@@ -9,6 +9,7 @@ import loggerMiddleware from './middleware/logger-middleware';
 
 // our routes
 import sfOauthRouter from '../router/sf-oauth-router';
+import bcOauthRouter from '../router/bc-oauth-router';
 import profileRouter from '../router/profile-router';
 import synopsisReportRouter from '../router/synopsis-report-router';
 import synopsisPdfRouter from '../router/synopsis-pdf-router';
@@ -41,6 +42,7 @@ app.use(express.json());
 // our own api routers or middleware
 app.use(loggerMiddleware);
 app.use(sfOauthRouter);
+app.use(bcOauthRouter);
 app.use(profileRouter);
 app.use(synopsisReportRouter);
 app.use(synopsisPdfRouter);
