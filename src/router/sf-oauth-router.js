@@ -83,11 +83,11 @@ const sendCookieResponse = (response, tokenPayload) => {
   const domain = firstDot > 0 ? process.env.CLIENT_URL.slice(firstDot) : null;
   const cookieOptions = { maxAge: process.env.SF_SESSION_TIMEOUT_MINUTES * 60 * 1000 };
   if (domain) cookieOptions.domain = domain;
-  response.cookie('RaToken', raToken, cookieOptions);
+  response.cookie('RaSfToken', raToken, cookieOptions);
   response.cookie('RaUser', Buffer.from(tokenPayload.role)
     .toString('base64'), cookieOptions);
   const refreshOptions = { maxAge: 5 * 360 * 24 * 60 * 60 * 1000 };
-  response.cookie('RaRefresh', tokenPayload.refreshToken, refreshOptions);
+  response.cookie('RaSfRefresh', tokenPayload.refreshToken, refreshOptions);
   return response.redirect(`${process.env.CLIENT_URL}`);
 };
 
