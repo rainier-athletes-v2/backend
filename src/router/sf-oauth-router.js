@@ -78,6 +78,7 @@ const retrieveMentorInfo = async (sfResponse, next) => {
 };
 
 const sendCookieResponse = (response, tokenPayload) => {
+  console.log('+++++++++ sf oauth cookie payload(s):', JSON.stringify(tokenPayload, null, 2));
   const raToken = jsonWebToken.sign(tokenPayload, process.env.SECRET);
   const firstDot = process.env.CLIENT_URL.indexOf('.');
   const domain = firstDot > 0 ? process.env.CLIENT_URL.slice(firstDot) : null;
