@@ -42,7 +42,7 @@ const sendCookieResponse = (response, tokenPayload) => {
   const cookieOptions = { maxAge: 14 * 24 * 60 * 60 * 1000 }; // two weeks
   if (domain) cookieOptions.domain = domain;
   response.cookie('RaBcToken', raToken, cookieOptions);
-  const refreshOptions = { maxAge: 5 * 360 * 24 * 60 * 60 * 1000 };
+  // const refreshOptions = { maxAge: 5 * 360 * 24 * 60 * 60 * 1000 };
   response.cookie('RaBcRefresh', tokenPayload.refreshToken, cookieOptions);
   return response.redirect(`${process.env.CLIENT_URL}`);
 };
