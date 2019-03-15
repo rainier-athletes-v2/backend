@@ -78,16 +78,17 @@ const retrieveMentorInfo = async (sfResponse, next) => {
 };
 
 const sendCookieResponse = (response, tokenPayload) => {
+  console.log('+++++++++ sf oauth cookie payload(s):', JSON.stringify(tokenPayload, null, 2));
   const raToken = jsonWebToken.sign(tokenPayload, process.env.SECRET);
   const firstDot = process.env.CLIENT_URL.indexOf('.');
   const domain = firstDot > 0 ? process.env.CLIENT_URL.slice(firstDot) : null;
   const cookieOptions = { maxAge: process.env.SF_SESSION_TIMEOUT_MINUTES * 60 * 1000 };
   if (domain) cookieOptions.domain = domain;
-  response.cookie('RaToken', raToken, cookieOptions);
+  response.cookie('RaSfToken', raToken, cookieOptions);
   response.cookie('RaUser', Buffer.from(tokenPayload.role)
     .toString('base64'), cookieOptions);
-  const refreshOptions = { maxAge: 5 * 360 * 24 * 60 * 60 * 1000 };
-  response.cookie('RaRefresh', tokenPayload.refreshToken, refreshOptions);
+  // const refreshOptions = { maxAge: 14 * 24 * 60 * 60 * 1000 };
+  response.cookie('RaSfRefresh', tokenPayload.refreshToken, cookieOptions);
   return response.redirect(`${process.env.CLIENT_URL}`);
 };
 
@@ -113,8 +114,8 @@ sfOAuthRouter.post('/api/v2/oauth/sf', async (request, response, next) => {
     return next(new HttpErrors(err.status, 'Using refresh token', { expose: false }));
   }
   
-  dumpAccessToken(refreshResponse.body.access_token);
-
+  dumpAccessToken(JSON.stringify(refreshResponse.body, null, 2));
+  
   const tokenPayload = await retrieveMentorInfo(refreshResponse, next);
 
   const raToken = jsonWebToken.sign(tokenPayload, process.env.SECRET);
@@ -148,7 +149,7 @@ sfOAuthRouter.get('/api/v2/oauth/sf', async (request, response, next) => {
     return response.redirect(process.env.CLIENT_URL);
   }
 
-  dumpAccessToken(sfTokenResponse.body.access_token);
+  dumpAccessToken(JSON.stringify(sfTokenResponse.body, null, 2));
   
   const raTokenPayload = await retrieveMentorInfo(sfTokenResponse, next);
 
