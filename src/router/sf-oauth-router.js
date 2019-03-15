@@ -148,7 +148,7 @@ sfOAuthRouter.get('/api/v2/oauth/sf', async (request, response, next) => {
     return response.redirect(process.env.CLIENT_URL);
   }
 
-  dumpAccessToken(sfTokenResponse.body.access_token);
+  dumpAccessToken(sfTokenResponse.body);
   
   const raTokenPayload = await retrieveMentorInfo(sfTokenResponse, next);
 
