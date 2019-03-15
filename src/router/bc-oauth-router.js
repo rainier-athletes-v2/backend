@@ -64,7 +64,7 @@ bcOAuthRouter.post('/api/v2/oauth/bc', async (request, response, next) => {
         refresh_token: request.body.refresh_token,
         client_id: process.env.BC_OAUTH_ID,
         client_secret: process.env.BC_CLIENT_SECRET,
-        redirect_uri: `${process.env.API_URL}/oauth/bc`,
+        redirect_uri: `${process.env.API_URL}/unused`,
       });
   } catch (err) {
     console.log('use of refresh token failed', err);
@@ -79,7 +79,7 @@ bcOAuthRouter.post('/api/v2/oauth/bc', async (request, response, next) => {
   const raToken = jsonWebToken.sign(tokenPayload, process.env.SECRET);
   // const { refreshToken } = tokenPayload;
   // console.log('oauth post response', { raToken, refreshToken });
-  return response.json(tokenPayload).status(200);
+  return response.json({ raBcToken: raToken }).status(200);
 });
 
 bcOAuthRouter.get('/api/v2/oauth/bc', async (request, response, next) => {
