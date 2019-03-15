@@ -87,8 +87,8 @@ const sendCookieResponse = (response, tokenPayload) => {
   response.cookie('RaSfToken', raToken, cookieOptions);
   response.cookie('RaUser', Buffer.from(tokenPayload.role)
     .toString('base64'), cookieOptions);
-  const refreshOptions = { maxAge: 5 * 360 * 24 * 60 * 60 * 1000 };
-  response.cookie('RaSfRefresh', tokenPayload.refreshToken, cookieOptions);
+  const refreshOptions = { maxAge: 1 * 365 * 24 * 60 * 60 * 1000 };
+  response.cookie('RaSfRefresh', tokenPayload.refreshToken, refreshOptions);
   return response.redirect(`${process.env.CLIENT_URL}`);
 };
 
