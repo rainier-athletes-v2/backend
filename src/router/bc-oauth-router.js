@@ -31,7 +31,7 @@ const retrieveBasecampInfo = async (bcResponse, next) => {
     refreshToken,
     accountUrl: raAccount.href,
   };
-  console.log('basecamp info:', raTokenPayload);
+
   return raTokenPayload;
 };
 
@@ -42,7 +42,6 @@ const sendCookieResponse = (response, tokenPayload) => {
   const cookieOptions = { maxAge: 14 * 24 * 60 * 60 * 1000 }; // two weeks
   if (domain) cookieOptions.domain = domain;
   response.cookie('RaBcToken', raToken, cookieOptions);
-  // const refreshOptions = { maxAge: 5 * 360 * 24 * 60 * 60 * 1000 };
   response.cookie('RaBcRefresh', tokenPayload.refreshToken, cookieOptions);
   return response.redirect(`${process.env.CLIENT_URL}`);
 };
@@ -70,15 +69,13 @@ bcOAuthRouter.post('/api/v2/oauth/bc', async (request, response, next) => {
     console.log('use of refresh token failed', err);
     return next(new HttpErrors(err.status, 'Using refresh token', { expose: false }));
   }
-  console.log('refresh token response', refreshResponse.body);
 
   dumpAccessToken(refreshResponse.body.access_token);
 
   const tokenPayload = await retrieveBasecampInfo(refreshResponse, next);
 
   const raToken = jsonWebToken.sign(tokenPayload, process.env.SECRET);
-  // const { refreshToken } = tokenPayload;
-  // console.log('oauth post response', { raToken, refreshToken });
+
   return response.json({ raBcToken: raToken }).status(200);
 });
 
@@ -87,7 +84,7 @@ bcOAuthRouter.get('/api/v2/oauth/bc', async (request, response, next) => {
     response.redirect(process.env.CLIENT_URL);
     return next(new HttpErrors(500, 'Salesforce OAuth: code not received.'));
   }
-  // ?type=web_server&client_id=your-client-id&redirect_uri=your-redirect-uri&client_secret=your-client-secret&code=verification-code
+
   let bcTokenResponse;
   try {
     bcTokenResponse = await superagent.post(process.env.BC_OAUTH_TOKEN_URL)

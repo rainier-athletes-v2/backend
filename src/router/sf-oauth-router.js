@@ -2,7 +2,6 @@ import { Router } from 'express';
 import superagent from 'superagent';
 import HttpErrors from 'http-errors';
 import jsonWebToken from 'jsonwebtoken';
-// import { google } from 'googleapis';
 import logger from '../lib/logger';
 
 require('dotenv').config();
@@ -78,7 +77,6 @@ const retrieveMentorInfo = async (sfResponse, next) => {
 };
 
 const sendCookieResponse = (response, tokenPayload) => {
-  console.log('+++++++++ sf oauth cookie payload(s):', JSON.stringify(tokenPayload, null, 2));
   const raToken = jsonWebToken.sign(tokenPayload, process.env.SECRET);
   const firstDot = process.env.CLIENT_URL.indexOf('.');
   const domain = firstDot > 0 ? process.env.CLIENT_URL.slice(firstDot) : null;
@@ -87,7 +85,6 @@ const sendCookieResponse = (response, tokenPayload) => {
   response.cookie('RaSfToken', raToken, cookieOptions);
   response.cookie('RaUser', Buffer.from(tokenPayload.role)
     .toString('base64'), cookieOptions);
-  // const refreshOptions = { maxAge: 14 * 24 * 60 * 60 * 1000 };
   response.cookie('RaSfRefresh', tokenPayload.refreshToken, cookieOptions);
   return response.redirect(`${process.env.CLIENT_URL}`);
 };
@@ -119,8 +116,7 @@ sfOAuthRouter.post('/api/v2/oauth/sf', async (request, response, next) => {
   const tokenPayload = await retrieveMentorInfo(refreshResponse, next);
 
   const raToken = jsonWebToken.sign(tokenPayload, process.env.SECRET);
-  // const { refreshToken } = tokenPayload;
-  // console.log('oauth post response', { raToken, refreshToken });
+
   return response.json({ raToken, raUser: Buffer.from(tokenPayload.role).toString('base64') }).status(200);
 });
 
