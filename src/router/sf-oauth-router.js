@@ -18,7 +18,7 @@ const retrieveMentorInfo = async (sfResponse, next) => {
   try {
     idResponse = await superagent.get(idUrl).set('Authorization', `Bearer ${accessToken}`);
   } catch (err) {
-    return next(new HttpErrors(err.status, `Error retrieving id from ${idUrl}`, { expose: false }));
+    return next(new HttpErrors(err.status, `SF: Error retrieving id from ${idUrl}`, { expose: false }));
   }
   const ptUpdateUrl = `${sfResponse.body.instance_url}/services/data/v${process.env.SF_API_VERSION}/composite/sobjects`;
   const sobjectsUrl = idResponse.body.urls.sobjects.replace('{version}', process.env.SF_API_VERSION);
@@ -31,7 +31,7 @@ const retrieveMentorInfo = async (sfResponse, next) => {
   try {
     userResponse = await superagent.get(userUrl).set('Authorization', `Bearer ${accessToken}`);
   } catch (err) {
-    return next(new HttpErrors(err.status, `Error retrieving User info from ${sobjectsUrl}User/${userId}`, { expose: false }));
+    return next(new HttpErrors(err.status, `SF: Error retrieving User info from ${sobjectsUrl}User/${userId}`, { expose: false }));
   }
 
   // now get ContactId and retrieve Contact record
@@ -41,13 +41,13 @@ const retrieveMentorInfo = async (sfResponse, next) => {
   try {
     contactResponse = await superagent.get(contactUrl).set('Authorization', `Bearer ${accessToken}`);
   } catch (err) {
-    return next(new HttpErrors(err.status, `Error retrieving Contact info from ${sobjectsUrl}Contact/${contactId}`, { expose: false }));
+    return next(new HttpErrors(err.status, `SF: Error retrieving Contact info from ${sobjectsUrl}Contact/${contactId}`, { expose: false }));
   }
 
   // now we can validate user's role as Mentor or Staff
   const validUser = contactResponse.body.Mentor__c || contactResponse.body.Staff__c;
   if (!validUser) {
-    return next(new HttpErrors(401, 'User not authorized.', { expose: false }));
+    return next(new HttpErrors(401, 'SF: User not authorized.', { expose: false }));
   }
 
   // user is validated.  Build object for use creating raToken
@@ -91,7 +91,7 @@ const sendCookieResponse = (response, tokenPayload) => {
 
 const dumpAccessToken = (token) => {
   if (process.env.NODE_ENV.toLowerCase() === 'development') {
-    console.log(`>>>>>>>>> access_token: ${token} <<<<<<<<<<<<`);
+    console.log(`>>>>>>>>> SF: access_token: ${token} <<<<<<<<<<<<`);
   }
 };
 
@@ -107,11 +107,11 @@ sfOAuthRouter.post('/api/v2/oauth/sf', async (request, response, next) => {
         client_id: process.env.SF_OAUTH_ID,
       });
   } catch (err) {
-    console.log('use of refresh token failed', err);
-    return next(new HttpErrors(err.status, 'Using refresh token', { expose: false }));
+    console.log('SF: Use of refresh token failed');
+    return next(new HttpErrors(err.status, 'SF: Error using refresh token', { expose: false }));
   }
   
-  dumpAccessToken(JSON.stringify(refreshResponse.body, null, 2));
+  dumpAccessToken(JSON.stringify(refreshResponse.body.access_token, null, 2));
   
   const tokenPayload = await retrieveMentorInfo(refreshResponse, next);
 
@@ -123,7 +123,7 @@ sfOAuthRouter.post('/api/v2/oauth/sf', async (request, response, next) => {
 sfOAuthRouter.get('/api/v2/oauth/sf', async (request, response, next) => {
   if (!request.query.code) {
     response.redirect(process.env.CLIENT_URL);
-    return next(new HttpErrors(500, 'Salesforce OAuth: code not received.'));
+    return next(new HttpErrors(500, 'SF: Salesforce OAuth: code not received.'));
   }
 
   let sfTokenResponse;
@@ -137,15 +137,15 @@ sfOAuthRouter.get('/api/v2/oauth/sf', async (request, response, next) => {
         redirect_uri: `${process.env.API_URL}/oauth/sf`,
       });
   } catch (err) {
-    return next(new HttpErrors(err.status, 'Salesforce Oauth: error fetching authorization tokens', { expose: false }));
+    return next(new HttpErrors(err.status, 'SF: Salesforce Oauth: error fetching authorization tokens', { expose: false }));
   }
 
   if (!sfTokenResponse.body.access_token) {
-    logger.log(logger.ERROR, 'No access token from Salesforce');
+    logger.log(logger.ERROR, 'SF: No access token from Salesforce');
     return response.redirect(process.env.CLIENT_URL);
   }
 
-  dumpAccessToken(JSON.stringify(sfTokenResponse.body, null, 2));
+  dumpAccessToken(JSON.stringify(sfTokenResponse.body.access_token, null, 2));
   
   const raTokenPayload = await retrieveMentorInfo(sfTokenResponse, next);
 
