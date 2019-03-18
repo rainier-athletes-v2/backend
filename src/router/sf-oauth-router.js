@@ -76,6 +76,15 @@ const retrieveMentorInfo = async (sfResponse, next) => {
   return raTokenPayload;
 };
 
+const setBCOAuthUrl = () => {
+  const baseUrl = process.env.BC_OAUTH_AUTHORIZE_URL;
+  const type = 'type=web_server';
+  const clientId = `client_id=${process.env.BC_OAUTH_ID.trim()}`;
+  const redirect = `redirect_uri=${process.env.API_URL}/oauth/bc`;
+  const oAuthUrl = `${baseUrl}?${type}&${clientId}&${redirect}`;
+  return oAuthUrl;
+};
+
 const sendCookieResponse = (response, tokenPayload) => {
   const raToken = jsonWebToken.sign(tokenPayload, process.env.SECRET);
   const firstDot = process.env.CLIENT_URL.indexOf('.');
@@ -86,7 +95,8 @@ const sendCookieResponse = (response, tokenPayload) => {
   response.cookie('RaUser', Buffer.from(tokenPayload.role)
     .toString('base64'), cookieOptions);
   response.cookie('RaSfRefresh', tokenPayload.refreshToken, cookieOptions);
-  return response.redirect(`${process.env.CLIENT_URL}`);
+  // return response.redirect(`${process.env.CLIENT_URL}`);
+  return response.redirect(setBCOAuthUrl());
 };
 
 const dumpAccessToken = (token) => {
