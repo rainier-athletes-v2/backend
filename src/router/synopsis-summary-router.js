@@ -1,28 +1,35 @@
 import { Router } from 'express';
 import HttpErrors from 'http-errors';
 import superagent from 'superagent';
+import jsonWebToken from 'jsonwebtoken';
+import { promisify } from 'util';
 import bearerAuthMiddleware from '../lib/middleware/bearer-auth-middleware';
+
+const jwtVerify = promisify(jsonWebToken.verify);
 
 const synopsisSummaryRouter = new Router();
 
+const pageUrl = (url, page) => (`${url}?page=${page}`);
+
 const fetch = async (url, auth, next, errorMsg) => {
   let res;
+  // console.log('fetch url', url, 'auth', auth);
   try {
     res = await superagent.get(url)
       .set('Authorization', `Bearer ${auth}`)
       .set('User-Agent', 'Rainier Athletes Mentor Portal (selpilot@gmail.com)')
-      .set('Content-Type', 'application/json')
+      .set('Content-Type', 'application/json');
   } catch (err) {
     return next(new HttpErrors(err.status, errorMsg, { expose: false }));
   }
+  // console.log('fetch', res.status);
   return res;
 };
 
 const fetchAllProjects = async (url, auth, next) => {
   let page = 1;
-  const pageUrl = p => (`${url}/page=${p}`);
   const allProjects = [];
-  let projects = await fetch(pageUrl(page), auth, next, `SR Summary: Error fetching page ${page} of projects`);
+  let projects = await fetch(pageUrl(url, page), auth, next, `SR Summary: Error fetching page ${page} of projects`);
   while (projects.body.length) {
     projects.body.forEach((p) => {
       if (p.purpose.toLowerCase().trim() === 'topic') { // mentee projects have purpose === topic
@@ -31,31 +38,31 @@ const fetchAllProjects = async (url, auth, next) => {
     });
     page += 1;
     // eslint-disable-next-line no-await-in-loop
-    projects = await fetch(pageUrl(page), auth, next, `SR Summary: Error fetching page ${page} of projects`);
+    projects = await fetch(pageUrl(url, page), auth, next, `SR Summary: Error fetching page ${page} of projects`);
   }
   return allProjects;
 };
 
 const fetchProjectPeople = async (project, auth, next) => {
   const peopleUrl = project.url.replace('.json', '/people.json');
-  const pageUrl = p => (`${peopleUrl}/page=${p}`);
   const allPeople = [];
   let page = 1;
-  let people = await fetch(pageUrl(page), auth, next, `SR Summary: Error fetching page ${page} of project people`);
+  let people = await fetch(pageUrl(peopleUrl, page), auth, next, `SR Summary: Error fetching page ${page} of project people`);
   while (people.body.length) {
     people.body.forEach(p => allPeople.push(p));
     page += 1;
     // eslint-disable-next-line no-await-in-loop
-    people = await fetch(pageUrl(page), auth, next, `SR Summary: Error fetching page ${page} of project people`);
+    people = await fetch(pageUrl(peopleUrl, page), auth, next, `SR Summary: Error fetching page ${page} of project people`);
   }
   return allPeople;
 };
 
 const findStudentMessageBoardUrl = async (request, next) => {
-  const { studentEmail, basecampToken } = request.body;
+  const { studentEmail, accessToken } = request.body;
   const authorizationUrl = 'https://launchpad.37signals.com/authorization.json';
 
-  const auth = await fetch(authorizationUrl, basecampToken, next, 'SR Summary: BC authorization.json request error');
+  console.log('requesting authorization');
+  const auth = await fetch(authorizationUrl, accessToken, next, 'SR Summary: BC authorization.json request error');
 
   const raAccount = auth.body.accounts ? auth.body.accounts.find(a => a.name.toLowerCase().trim() === 'rainier athletes') : null;
   if (!raAccount) {
@@ -72,16 +79,17 @@ const findStudentMessageBoardUrl = async (request, next) => {
   // create new message in selected message board (POST /buckets/1/message_boards/3/messages.json) 
 
   const projectsUrl = `${raAccount.href}/projects.json`;
-
-  const projects = fetchAllProjects(projectsUrl, basecampToken, next);
+  console.log('projectsUrl', projectsUrl);
+  const projects = await fetchAllProjects(projectsUrl, accessToken, next);
   if (projects.length === 0) {
     return next(new HttpErrors(500, 'SR Summary: No projects found associated with the mentor', { expose: false }));  
   }
-
+  console.log('found', projects.length, 'projects');
   const menteesProjects = [];
   for (let i = 0; i < projects.length; i++) {
     // eslint-disable-next-line no-await-in-loop
-    const people = await fetchProjectPeople(projects[i], basecampToken, next);
+    const people = await fetchProjectPeople(projects[i], accessToken, next);
+    // console.log('project', i, 'has', people.length, 'people');
     people.forEach((person) => {
       if (person.email_address.toLowerCase().trim() === studentEmail.toLowerCase().trim()) {
         menteesProjects.push(projects[i]);
@@ -89,6 +97,7 @@ const findStudentMessageBoardUrl = async (request, next) => {
     });
   }
 
+  console.log('found', menteesProjects.length, 'joint projects');
   if (menteesProjects.length > 1) {
     console.log('More than 1 project with both mentor and mentee as members!');
     console.log(JSON.stringify(menteesProjects, null, 2));
@@ -99,6 +108,7 @@ const findStudentMessageBoardUrl = async (request, next) => {
   const messageBoard = menteesProjects[0].dock.find(d => d.name === 'message_board') || null;
   const messageBoardUrl = messageBoard && messageBoard.url;
   const messageBoardPostUrl = messageBoardUrl && messageBoardUrl.replace('.json', '/messages.json');
+  // console.log('messageBoardPostUrl', messageBoardPostUrl);
   return messageBoardPostUrl;
 
   // return 'https://3.basecampapi.com/3595417/buckets/8778597/message_boards/1248902284/messages.json';
@@ -125,28 +135,40 @@ synopsisSummaryRouter.post('/api/v2/synopsissummary', bearerAuthMiddleware, asyn
     basecampToken,  
   } = request.body;
   
+  console.log('calling jwtVerify...');
+  // bcPayload = await jwtVerify(basecampToken, process.env.SECRET);
+  const bcPayload = jsonWebToken.verify(basecampToken, process.env.SECRET);
+  console.log('payload', JSON.stringify(bcPayload, null, 2));
+  request.body.accessToken = bcPayload.accessToken;
+
   const message = {
     subject,
     content: prepContentForBasecamp(content),
     status: 'active',
   };
   
-  
-  const studentMessageBoard = await findStudentMessageBoardUrl(request);
-  
+  console.log('sr post calling findStudentMessageBoardUrl');
+  const studentMessageBoardUrl = await findStudentMessageBoardUrl(request);
+  if (!studentMessageBoardUrl) {
+    return next(new HttpErrors(500, 'SR Summary: No message board found for mentor and student', { expose: false }));
+  }
+
   console.log('sr summaryRouter sending', JSON.stringify(message, null, 2));
+  console.log('to url', studentMessageBoardUrl);
+  console.log('using auth token', request.body.accessToken);
   let result;
   try {
-    result = await superagent.post(studentMessageBoard)
-      .set('Authorization', `Bearer ${basecampToken}`)
+    result = await superagent.post(studentMessageBoardUrl)
+      .set('Authorization', `Bearer ${request.body.accessToken}`)
       .set('User-Agent', 'Rainier Athletes Mentor Portal (selpilot@gmail.com)')
-      .set('Content-Type', 'application/json')
-      .json(message);
+      // .set('Content-Type', 'application/json')
+      .send(message);
+    if (result.status === 201) return response.status(201);
   } catch (err) {
-    console.log('Error posting message to basecamp', err.status);
+    console.log('Error posting message to basecamp', JSON.stringify(err, null, 2));
+    return next(new HttpErrors(500, 'SR Summary: Error posting summary message', { expose: false }));
   }
-  console.log('status: ', result.status);
-  console.log(JSON.stringify(result.body, null, 2));
+
   return response.status(201);
 });
 
