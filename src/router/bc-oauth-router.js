@@ -2,7 +2,6 @@ import { Router } from 'express';
 import superagent from 'superagent';
 import HttpErrors from 'http-errors';
 import jsonWebToken from 'jsonwebtoken';
-// import { google } from 'googleapis';
 import logger from '../lib/logger';
 
 require('dotenv').config();
@@ -22,7 +21,7 @@ const retrieveBasecampInfo = async (bcResponse, next) => {
       .set('Authorization', `Bearer ${accessToken}`)
       .set({ 'User-Agent': 'Rainier Athletes Mentor Portal (selpilot@gmail.com)' });
   } catch (err) {
-    return next(new HttpErrors(err.status, `Error retrieving info from ${authorizationsUrl}`, { expose: false }));
+    return next(new HttpErrors(err.status, `BC: Error retrieving info from ${authorizationsUrl}`, { expose: false }));
   }
 
   const raAccount = authResponse.body.accounts.find(a => a.name.trim() === 'Rainier Athletes') || {};
@@ -54,20 +53,28 @@ const dumpAccessToken = (token) => {
 
 bcOAuthRouter.post('/api/v2/oauth/bc', async (request, response, next) => {
   // try using the refresh token
+  // POST https://launchpad.37signals.com/authorization/token
   // ?type=refresh&refresh_token=your-current-refresh-token&client_id=your-client-id&redirect_uri=your-redirect-uri&client_secret=your-client-secret
   let refreshResponse;
+  const query = {
+    type: 'refresh',
+    refresh_token: request.body.refresh_token,
+    client_id: process.env.BC_OAUTH_ID,
+    client_secret: process.env.BC_CLIENT_SECRET,
+    redirect_uri: `${process.env.API_URL}/oauth/bc`,
+  };
+
   try {
-    refreshResponse = await superagent.post(process.env.SF_OAUTH_TOKEN_URL)
-      .query({
-        type: 'refresh',
-        refresh_token: request.body.refresh_token,
-        client_id: process.env.BC_OAUTH_ID,
-        client_secret: process.env.BC_CLIENT_SECRET,
-        redirect_uri: `${process.env.API_URL}/unused`,
-      });
+    refreshResponse = await superagent.post(process.env.BC_OAUTH_TOKEN_URL)
+      .set({ 'User-Agent': 'Rainier Athletes Mentor Portal (selpilot@gmail.com)' })
+      .query('type=refresh')
+      .query(`refresh_token=${query.refresh_token}`)
+      .query(`client_id=${query.client_id}`)
+      .query(`redirect_uri=${query.redirect_uri}`)
+      .query(`client_secret=${query.client_secret}`);
   } catch (err) {
-    console.log('use of refresh token failed', err);
-    return next(new HttpErrors(err.status, 'Using refresh token', { expose: false }));
+    console.log('BC: Use of refresh token failed');
+    return next(new HttpErrors(err.status, 'BC: Error using refresh token', { expose: false }));
   }
 
   dumpAccessToken(refreshResponse.body.access_token);
@@ -82,7 +89,7 @@ bcOAuthRouter.post('/api/v2/oauth/bc', async (request, response, next) => {
 bcOAuthRouter.get('/api/v2/oauth/bc', async (request, response, next) => {
   if (!request.query.code) {
     response.redirect(process.env.CLIENT_URL);
-    return next(new HttpErrors(500, 'Salesforce OAuth: code not received.'));
+    return next(new HttpErrors(500, 'BC: Code not received.'));
   }
 
   let bcTokenResponse;
@@ -97,11 +104,11 @@ bcOAuthRouter.get('/api/v2/oauth/bc', async (request, response, next) => {
         code: request.query.code,
       });
   } catch (err) {
-    return next(new HttpErrors(err.status, 'Salesforce Oauth: error fetching authorization tokens', { expose: false }));
+    return next(new HttpErrors(err.status, 'BC: Error fetching authorization tokens', { expose: false }));
   }
 
   if (!bcTokenResponse.body.access_token) {
-    logger.log(logger.ERROR, 'No access token from Salesforce');
+    logger.log(logger.ERROR, 'BC: No access token from Basecamp');
     return response.redirect(process.env.CLIENT_URL);
   }
 

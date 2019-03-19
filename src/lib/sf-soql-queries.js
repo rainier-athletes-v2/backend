@@ -65,6 +65,7 @@ export const thisSynopsisReport = reportId => (
     Synopsis_Report_Status__c,
     Student__r.Name,
     Student__r.Student_Grade__c,
+    Student__r.npe01__HomeEmail__c,
     Mentor_Is_Substitute__c,
     Weekly_Check_In_Status__c, 
     
