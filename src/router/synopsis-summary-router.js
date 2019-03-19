@@ -2,10 +2,7 @@ import { Router } from 'express';
 import HttpErrors from 'http-errors';
 import superagent from 'superagent';
 import jsonWebToken from 'jsonwebtoken';
-import { promisify } from 'util';
 import bearerAuthMiddleware from '../lib/middleware/bearer-auth-middleware';
-
-const jwtVerify = promisify(jsonWebToken.verify);
 
 const synopsisSummaryRouter = new Router();
 
@@ -29,8 +26,10 @@ const fetch = async (url, auth, next, errorMsg) => {
 const fetchAllProjects = async (url, auth, next) => {
   let page = 1;
   const allProjects = [];
-  let projects = await fetch(pageUrl(url, page), auth, next, `SR Summary: Error fetching page ${page} of projects`);
-  while (projects.body.length) {
+  let projects;
+  do {
+    // eslint-disable-next-line no-await-in-loop
+    projects = await fetch(pageUrl(url, page), auth, next, `SR Summary GET: Error fetching page ${page} of projects`);
     projects.body.forEach((p) => {
       if (p.purpose.toLowerCase().trim() === 'topic') { // mentee projects have purpose === topic
         allProjects.push(p);
@@ -38,8 +37,8 @@ const fetchAllProjects = async (url, auth, next) => {
     });
     page += 1;
     // eslint-disable-next-line no-await-in-loop
-    projects = await fetch(pageUrl(url, page), auth, next, `SR Summary: Error fetching page ${page} of projects`);
-  }
+    // projects = await fetch(pageUrl(url, page), auth, next, `SR Summary: Error fetching page ${page} of projects`);
+  } while (projects.get('Link'));
   return allProjects;
 };
 
@@ -47,13 +46,14 @@ const fetchProjectPeople = async (project, auth, next) => {
   const peopleUrl = project.url.replace('.json', '/people.json');
   const allPeople = [];
   let page = 1;
-  let people = await fetch(pageUrl(peopleUrl, page), auth, next, `SR Summary: Error fetching page ${page} of project people`);
-  while (people.body.length) {
+  let people;
+  do {
+    // eslint-disable-next-line no-await-in-loop
+    people = await fetch(pageUrl(peopleUrl, page), auth, next, `SR Summary GET: Error fetching page ${page} of project people`);
     people.body.forEach(p => allPeople.push(p));
     page += 1;
     // eslint-disable-next-line no-await-in-loop
-    people = await fetch(pageUrl(peopleUrl, page), auth, next, `SR Summary: Error fetching page ${page} of project people`);
-  }
+  } while (people.get('Link'));
   return allPeople;
 };
 
@@ -67,7 +67,7 @@ const findStudentMessageBoardUrl = async (request, next) => {
 
   const raAccount = auth.body.accounts ? auth.body.accounts.find(a => a.name.toLowerCase().trim() === 'rainier athletes') : null;
   if (!raAccount) {
-    return next(new HttpErrors(403, 'SR Summary: Rainier Athletes account not found among authorization response accounts', { expose: false }));  
+    return next(new HttpErrors(403, 'SR Summary GET: Rainier Athletes account not found among authorization response accounts', { expose: false }));  
   }
 
   // Get all of mentor's projects (GET /projects.json)
@@ -83,7 +83,7 @@ const findStudentMessageBoardUrl = async (request, next) => {
   console.log('projectsUrl', projectsUrl);
   const projects = await fetchAllProjects(projectsUrl, accessToken, next);
   if (projects.length === 0) {
-    return next(new HttpErrors(500, 'SR Summary: No projects found associated with the mentor', { expose: false }));  
+    return next(new HttpErrors(500, 'SR Summary GET: No projects found associated with the mentor', { expose: false }));  
   }
   console.log('found', projects.length, 'projects');
   const menteesProjects = [];
@@ -103,7 +103,7 @@ const findStudentMessageBoardUrl = async (request, next) => {
     console.log('More than 1 project with both mentor and mentee as members!');
     console.log(JSON.stringify(menteesProjects, null, 2));
     // for now...
-    return next(new HttpErrors(500, 'SR Summary: More than 1 project with both mentor and mentee as members!', { expose: false })); 
+    return next(new HttpErrors(500, 'SR Summary GET: More than 1 project with both mentor and mentee as members!', { expose: false })); 
   }
 
   const messageBoard = menteesProjects[0].dock.find(d => d.name === 'message_board') || null;
@@ -166,11 +166,7 @@ synopsisSummaryRouter.post('/api/v2/synopsissummary', bearerAuthMiddleware, asyn
     messageBoardUrl, 
   } = request.body;
   
-  console.log('calling jwtVerify...');
-  // bcPayload = await jwtVerify(basecampToken, process.env.SECRET);
-  const bcPayload = jsonWebToken.verify(basecampToken, process.env.SECRET);
-  console.log('payload', JSON.stringify(bcPayload, null, 2));
-  request.accessToken = bcPayload.accessToken;
+  request.accessToken = jsonWebToken.verify(basecampToken, process.env.SECRET).accessToken;
 
   const message = {
     subject,
