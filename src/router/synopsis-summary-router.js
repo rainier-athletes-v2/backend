@@ -105,7 +105,9 @@ const findStudentMessageBoardUrl = async (request, next) => {
     // for now...
     return next(new HttpErrors(500, 'SR Summary GET: More than 1 project with both mentor and mentee as members!', { expose: false })); 
   }
-
+  if (menteesProjects.length === 0) {
+    return undefined;
+  }
   const messageBoard = menteesProjects[0].dock.find(d => d.name === 'message_board') || null;
   const messageBoardUrl = messageBoard && messageBoard.url;
   const messageBoardPostUrl = messageBoardUrl && messageBoardUrl.replace('.json', '/messages.json');
@@ -140,7 +142,7 @@ synopsisSummaryRouter.get('/api/v2/synopsissummary', bearerAuthMiddleware, async
   console.log('sr get calling findStudentMessageBoardUrl');
   const studentMessageBoardUrl = await findStudentMessageBoardUrl(request);
   if (!studentMessageBoardUrl) {
-    return next(new HttpErrors(500, 'SR Summary GET: No message board found for mentor and student', { expose: false }));
+    return next(new HttpErrors(500, 'SR Summary GET: No message board found under mentor with student', { expose: false }));
   }
   console.log('GET returning', studentMessageBoardUrl);
   response.send({ messageBoardUrl: studentMessageBoardUrl }).status(200);
