@@ -58,7 +58,8 @@ const fetchProjectPeople = async (project, auth, next) => {
 };
 
 const findStudentMessageBoardUrl = async (request, next) => {
-  const { studentEmail, accessToken } = request.body;
+  const { accessToken } = request;
+  const { studentEmail } = request.query;
   const authorizationUrl = 'https://launchpad.37signals.com/authorization.json';
 
   console.log('requesting authorization');
@@ -119,26 +120,57 @@ const prepContentForBasecamp = (html) => {
   return text;
 };
 
-synopsisSummaryRouter.post('/api/v2/synopsissummary', bearerAuthMiddleware, async (request, response, next) => {
-  if (!request.body) {
-    return next(new HttpErrors(403, 'SR Summary: Missing request body', { expose: false }));
+// return message board URL for a given student/mentor pair
+synopsisSummaryRouter.get('/api/v2/synopsissummary', bearerAuthMiddleware, async (request, response, next) => {
+  // request.query = {
+  //   basecampToken, studentEmail
+  // }
+  console.log('studentEmail', request.query.studentEmail, 'basecampToken truthy?', !!request.query.basecampToken);
+  if (!request.query) {
+    return next(new HttpErrors(403, 'SR Summary GET: Missing request query', { expose: false }));
   }
-  if (!request.body.subject || !request.body.content || !request.body.basecampToken || !request.body.studentEmail) {
-    return next(new HttpErrors(403, 'SR Summary: Request missing required properties', { expose: false }));
+  if (!request.query.basecampToken || !request.query.studentEmail) {
+    return next(new HttpErrors(403, 'SR Summary GET: Request missing required query parameters', { expose: false }));
+  }
+
+  const { basecampToken } = request.query;
+
+  request.accessToken = jsonWebToken.verify(basecampToken, process.env.SECRET).accessToken;
+
+  console.log('sr get calling findStudentMessageBoardUrl');
+  const studentMessageBoardUrl = await findStudentMessageBoardUrl(request);
+  if (!studentMessageBoardUrl) {
+    return next(new HttpErrors(500, 'SR Summary GET: No message board found for mentor and student', { expose: false }));
+  }
+  console.log('GET returning', studentMessageBoardUrl);
+  response.send({ messageBoardUrl: studentMessageBoardUrl }).status(200);
+});
+
+// post synopsis report summary to student's message board
+synopsisSummaryRouter.post('/api/v2/synopsissummary', bearerAuthMiddleware, async (request, response, next) => {
+  // the request.body = {
+  //  subject, content, basecampToken, messageBoardUrl
+  // }
+  if (!request.body) {
+    return next(new HttpErrors(403, 'SR Summary POST: Missing request body', { expose: false }));
+  }
+  if (!request.body.subject || !request.body.content || !request.body.basecampToken || !request.body.messageBoardUrl) {
+    return next(new HttpErrors(403, 'SR Summary POST: Request missing required properties', { expose: false }));
   }
   
   // https://3.basecampapi.com/3595417/buckets/8778597/message_boards/1248902284/messages.json
   const {
     subject, 
     content, 
-    basecampToken,  
+    basecampToken, 
+    messageBoardUrl, 
   } = request.body;
   
   console.log('calling jwtVerify...');
   // bcPayload = await jwtVerify(basecampToken, process.env.SECRET);
   const bcPayload = jsonWebToken.verify(basecampToken, process.env.SECRET);
   console.log('payload', JSON.stringify(bcPayload, null, 2));
-  request.body.accessToken = bcPayload.accessToken;
+  request.accessToken = bcPayload.accessToken;
 
   const message = {
     subject,
@@ -146,28 +178,28 @@ synopsisSummaryRouter.post('/api/v2/synopsissummary', bearerAuthMiddleware, asyn
     status: 'active',
   };
   
-  console.log('sr post calling findStudentMessageBoardUrl');
-  const studentMessageBoardUrl = await findStudentMessageBoardUrl(request);
-  if (!studentMessageBoardUrl) {
-    return next(new HttpErrors(500, 'SR Summary: No message board found for mentor and student', { expose: false }));
-  }
+  // console.log('sr post calling findStudentMessageBoardUrl');
+  // const studentMessageBoardUrl = await findStudentMessageBoardUrl(request);
+  // if (!studentMessageBoardUrl) {
+  //   return next(new HttpErrors(500, 'SR Summary: No message board found for mentor and student', { expose: false }));
+  // }
 
   console.log('sr summaryRouter sending', JSON.stringify(message, null, 2));
-  console.log('to url', studentMessageBoardUrl);
-  console.log('with auth token', bcPayload.accessToken);
+  console.log('to url', messageBoardUrl);
+  console.log('with auth token', request.accessToken);
   let result;
   try {
-    result = await superagent.post(studentMessageBoardUrl)
-      .set('Authorization', `Bearer ${bcPayload.accessToken}`)
+    result = await superagent.post(messageBoardUrl)
+      .set('Authorization', `Bearer ${request.accessToken}`)
       .set('User-Agent', 'Rainier Athletes Mentor Portal (selpilot@gmail.com)')
       .set('Content-Type', 'application/json')
       .send(message);
   } catch (err) {
     console.log('Error posting message to basecamp', JSON.stringify(err, null, 2));
-    return next(new HttpErrors(500, 'SR Summary: Error posting summary message', { expose: false }));
+    return next(new HttpErrors(500, 'SR Summary POST: Error posting summary message', { expose: false }));
   }
   console.log('returning good status', result.status);
-  return response.status(201);
+  return response.sendStatus(201);
 });
 
 export default synopsisSummaryRouter;
