@@ -126,7 +126,6 @@ synopsisSummaryRouter.post('/api/v2/synopsissummary', bearerAuthMiddleware, asyn
   if (!request.body.subject || !request.body.content || !request.body.basecampToken || !request.body.studentEmail) {
     return next(new HttpErrors(403, 'SR Summary: Request missing required properties', { expose: false }));
   }
-  console.log('synopsisSummaryRouter received', request.body);
   
   // https://3.basecampapi.com/3595417/buckets/8778597/message_boards/1248902284/messages.json
   const {
@@ -155,20 +154,19 @@ synopsisSummaryRouter.post('/api/v2/synopsissummary', bearerAuthMiddleware, asyn
 
   console.log('sr summaryRouter sending', JSON.stringify(message, null, 2));
   console.log('to url', studentMessageBoardUrl);
-  console.log('using auth token', request.body.accessToken);
+  console.log('with auth token', bcPayload.accessToken);
   let result;
   try {
     result = await superagent.post(studentMessageBoardUrl)
-      .set('Authorization', `Bearer ${request.body.accessToken}`)
+      .set('Authorization', `Bearer ${bcPayload.accessToken}`)
       .set('User-Agent', 'Rainier Athletes Mentor Portal (selpilot@gmail.com)')
-      // .set('Content-Type', 'application/json')
+      .set('Content-Type', 'application/json')
       .send(message);
-    if (result.status === 201) return response.status(201);
   } catch (err) {
     console.log('Error posting message to basecamp', JSON.stringify(err, null, 2));
     return next(new HttpErrors(500, 'SR Summary: Error posting summary message', { expose: false }));
   }
-
+  console.log('returning good status', result.status);
   return response.status(201);
 });
 
