@@ -152,3 +152,12 @@ export const studentFamilyMembers = accountId => (
   FROM Account
   Where Id = '${accountId}'`
 );
+
+export const relatedTeacher = studentId => (
+  `SELECT
+    npe4__Contact__c,
+    npe4__RelatedContact__r.Name,  
+    npe4__Status__c 
+  FROM npe4__Relationship__c 
+  WHERE npe4__Type__c = 'Teacher' AND npe4__Contact__c = '${studentId}'`
+);
