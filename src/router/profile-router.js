@@ -82,6 +82,33 @@ profileRouter.get('/api/v2/profiles/myStudents', bearerAuthMiddleware, async (re
       return profile;
     });
 
+    // fetch related teacher (their "main" teacher). May or may not be present. Intended for elementary students.
+    const relPromises = [];
+    studentContacts.forEach((student) => {
+      const teacherQuery = `?q=${soql.relatedTeacher(student.id)}`;
+      try {
+        relPromises.push(
+          superagent.get(`${queryUrl}${teacherQuery}`)
+            .set('Authorization', `Bearer ${accessToken}`),
+        );
+      } catch (err) {
+        return next(new HttpErrors(err.status, `Error retrieving teacher relationships for student ${student.id}`, { expose: false }));
+      }
+      return undefined;
+    });
+    const relBodies = await Promise.all(relPromises);
+    const relRecords = relBodies.map(b => (b.body.records[0] ? b.body.records[0] : {}));
+ 
+    // add teacher name to each studentContact's studentData. relRecords is an array of objects, one per student.
+    relRecords.forEach((teacher) => {
+      if (teacher.npe4__Contact__c) { // teacher object isn't empty
+        const studentRef = studentContacts.find(s => s.id === teacher.npe4__Contact__c);
+        if (studentRef) {
+          studentRef.studentData.teacher = teacher.npe4__RelatedContact__r.Name;
+        }
+      }
+    });
+
     // fetch student team info
     const affPromises = [];
     studentContacts.forEach((student) => {
