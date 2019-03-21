@@ -137,15 +137,16 @@ profileRouter.get('/api/v2/profiles/myStudents', bearerAuthMiddleware, async (re
           email: team.npe5__Organization__r.npe01__One2OneContact__r.Email,
           role: 'coach',
           currentCoach: true,
-          sport: 'not specified',
+          sport: 'DEV: this not in Salesforce',
           teamName: team.npe5__Organization__r.Name,
-          league: 'not specified',
-          teamCalendarUrl: 'not specified',
+          league: `DEV: ParentId: ${team.npe5__Organization__r.ParentId}`,
+          teamCalendarUrl: 'DEV: this not in Salesforce',
           currentlyPlaying: true,
         },
       }));
       teamData.push(teams);
     });
+    // fetch parent organization name using ParentId stored in teamData[n].team.league
 
     // add coach and sports info to studentContacts
     teamData.forEach((student) => {  
