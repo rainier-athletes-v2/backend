@@ -126,7 +126,8 @@ export const studentTeamAffiliations = studentId => (
     npe5__Organization__r.npe01__One2OneContact__r.Phone,
     npe5__Organization__r.npe01__One2OneContact__r.Email,
     npe5__Organization__r.Name, 
-    npe5__Organization__r.Type, 
+    npe5__Organization__r.Type,
+    npe5__Organization__r.ParentId,
     npe5__Contact__r.Name,
     npe5__Contact__r.Id,
     npe5__Role__c,
@@ -136,6 +137,13 @@ export const studentTeamAffiliations = studentId => (
     AND (npe5__EndDate__c > TODAY OR npe5__EndDate__c = TODAY)
     AND npe5__Status__c = 'Current'
     AND npe5__Contact__c = '${studentId}'`
+);
+
+export const accountName = accountId => (
+  `SELECT
+    Name
+  FROM Account
+  WHERE Id = '${accountId}`
 );
 
 export const studentFamilyMembers = accountId => (
