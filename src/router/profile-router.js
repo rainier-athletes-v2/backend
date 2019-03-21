@@ -139,7 +139,7 @@ profileRouter.get('/api/v2/profiles/myStudents', bearerAuthMiddleware, async (re
           currentCoach: true,
           sport: 'DEV: this not in Salesforce',
           teamName: team.npe5__Organization__r.Name,
-          league: `DEV: ParentId: ${team.npe5__Organization__r.ParentId}`,
+          league: team.npe5__Organization__r.Parent.Name,
           teamCalendarUrl: 'DEV: this not in Salesforce',
           currentlyPlaying: true,
         },
