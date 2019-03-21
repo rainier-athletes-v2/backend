@@ -127,7 +127,7 @@ export const studentTeamAffiliations = studentId => (
     npe5__Organization__r.npe01__One2OneContact__r.Email,
     npe5__Organization__r.Name, 
     npe5__Organization__r.Type,
-    npe5__Organization__r.ParentId,
+    npe5__Organization__r.Parent.Name,
     npe5__Contact__r.Name,
     npe5__Contact__r.Id,
     npe5__Role__c,
