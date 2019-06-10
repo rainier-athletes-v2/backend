@@ -27,7 +27,7 @@ export const myStudents = mentorId => (
     FROM PointTrackers__r order by CreatedDate DESC LIMIT 1)
   FROM SynopsisReport__c 
   WHERE SynopsisReport__c.Start_Date__c > N_DAYS_AGO:14
-    ANd SynopsisReport__c.Mentor__r.Id = '${mentorId}'`
+    AND SynopsisReport__c.Mentor__r.Id = '${mentorId}'`
 );
 
 export const classSchedule = studentId => (
@@ -49,7 +49,8 @@ export const recentSynopsisReports = studentId => (
     Point_Sheet_Status__c,
     Synopsis_Report_Status__c,
     Start_Date__c,
-    Week__c
+    Week__c,
+    (SELECT Id FROM PointTrackers__r)
   FROM SynopsisReport__c 
   WHERE Student__c = '${studentId}' 
   ORDER BY Start_Date__c DESC LIMIT 3`
@@ -99,6 +100,18 @@ export const thisSynopsisReport = reportId => (
 
     Mentor_Support_Request__c,
     Mentor_Support_Request_Notes__c,
+    
+    Summer_attend_next_camp__c,
+    Summer_attended_last_camp__c,
+    Summer_attended_last_camp_notes__c,
+    Summer_family_connection_made__c,
+    Summer_family_connection_other_notes__c,
+    Summer_family_connection_status__c,
+    Summer_next_camp_notes__c,
+    Summer_question_of_the_week_response__c,
+    Summer_weekly_connection_made__c,
+    Summer_weekly_connection_other_notes__c,
+    Summer_weekly_connection_status__c,
     
     (SELECT 
       Id, 

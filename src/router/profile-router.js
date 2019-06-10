@@ -49,8 +49,7 @@ profileRouter.get('/api/v2/profiles/myStudents', bearerAuthMiddleware, async (re
         uniqueStudents.set(records[i].Student__r.Id, { student: records[i].Student__r, pointTracker: records[i].PointTrackers__r });
       }
     }
-    // console.log(uniqueStudents);
-    // const studentContacts = relatedContacts.body.records[0].npe4__Relationships__r.records.map((student) => {
+    
     const studentsArray = [...uniqueStudents.values()];
     const studentContacts = studentsArray.map((studentObj) => {
       const ref = studentObj.student;
@@ -74,11 +73,15 @@ profileRouter.get('/api/v2/profiles/myStudents', bearerAuthMiddleware, async (re
           googleCalendarUrl: ref.StudentGoogleCalendarUrl__c,
           synergyUsername: ref.Synergy_Username__c,
           synergyPassword: ref.Synergy_Password__c,
-          schoolName: studentObj.pointTracker.totalSize ? studentObj.pointTracker.records[0].Class__r.School__r.Name : '',
           teams: [],
           family: [],
         },
       };
+      if (studentObj.pointTracker) {
+        profile.studentData.schoolName = studentObj.pointTracker.records[0].Class__r.School__r.Name;
+      } else {
+        profile.studentData.schoolName = 'Unknown';
+      }
       return profile;
     });
 

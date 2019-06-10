@@ -65,6 +65,7 @@ const _prepSynopsisReport = (sr) => {
   delete newSR.Start_Date__c;
   delete newSR.Student__r;
   delete newSR.PointTrackers__r;
+  delete newSR.summer_SR;
   return newSR;
 };
 
@@ -99,8 +100,7 @@ synopsisReportRouter.put('/api/v2/synopsisreport', bearerAuthMiddleware, async (
   const srId = synopsisReport.Id;
   const srName = synopsisReport.Name;
   const preppedSR = _prepSynopsisReport(synopsisReport); // prepair SynopsisReport__c for update
-  const preppedPT = _prepPointTrackers(synopsisReport);
-
+  console.log('making patch request');
   try {
     await superagent.patch(`${sobjectsUrl}SynopsisReport__c/${srId}`)
       .set('Authorization', `Bearer ${accessToken}`)
@@ -108,20 +108,26 @@ synopsisReportRouter.put('/api/v2/synopsisreport', bearerAuthMiddleware, async (
   } catch (err) {
     return next(new HttpErrors(err.status, `Error Updating Synopsis Report ${request.body.Id}`, { expose: false }));
   }
+  console.log('back from patch call');
+  if (!synopsisReport.summer_SR) {
+    console.log('saving point trackers');
+    const preppedPT = _prepPointTrackers(synopsisReport);
+    let ptResult;
+    try {
+      ptResult = await superagent.patch(ptUpdateUrl)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send(preppedPT);
+    } catch (err) {
+      return next(new HttpErrors(err.status, `Error Updating Point Trackers for SR ${srName}`, { expose: false }));
+    }
 
-  let ptResult;
-  try {
-    ptResult = await superagent.patch(ptUpdateUrl)
-      .set('Authorization', `Bearer ${accessToken}`)
-      .send(preppedPT);
-  } catch (err) {
-    return next(new HttpErrors(err.status, `Error Updating Point Trackers for SR ${srName}`, { expose: false }));
+    if (ptResult.body.every(r => r.success)) {
+      return response.sendStatus(204);
+    }
+    return next(new HttpErrors(500, `Failure saving point trackers for SR ${srName}`, { expose: false }));
   }
-
-  if (ptResult.body.every(r => r.success)) {
-    return response.sendStatus(204);
-  }
-  return next(new HttpErrors(500, `Failure saving point trackers for SR ${srName}`, { expose: false }));
+  console.log('returning status 204');
+  return response.sendStatus(204);
 });
 
 export default synopsisReportRouter;
