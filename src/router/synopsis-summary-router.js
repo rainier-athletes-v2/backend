@@ -69,7 +69,7 @@ const findStudentMessageBoardUrl = async (request, next) => {
   if (!raAccount) {
     return next(new HttpErrors(403, 'SR Summary GET: Rainier Athletes account not found among authorization response accounts', { expose: false }));  
   }
-
+  console.log('raAccount', JSON.stringify(raAccount, null, 2));
   // Get all of mentor's projects (GET /projects.json)
   // for each project id = N
   //     get all the people associated with the project  (GET /projects/N/people.json)
