@@ -45,9 +45,9 @@ const sendCookieResponse = (response, tokenPayload) => {
   return response.redirect(`${process.env.CLIENT_URL}`);
 };
 
-const dumpAccessToken = (token) => {
+const dumpAccessToken = (token, message) => {
   if (process.env.NODE_ENV.toLowerCase() === 'development') {
-    console.log(`>>>>>>>>> BASECAMP access_token: ${token} <<<<<<<<<<<<`);
+    console.log(`>>>>>>>>> BASECAMP access_token (${message}): ${token} <<<<<<<<<<<<`);
   }
 };
 
@@ -77,7 +77,7 @@ bcOAuthRouter.post('/api/v2/oauth/bc', async (request, response, next) => {
     return next(new HttpErrors(err.status, 'BC: Error using refresh token', { expose: false }));
   }
 
-  dumpAccessToken(refreshResponse.body.access_token);
+  dumpAccessToken(refreshResponse.body.access_token, 'REFRESH');
 
   const tokenPayload = await retrieveBasecampInfo(refreshResponse, next);
 
@@ -112,7 +112,7 @@ bcOAuthRouter.get('/api/v2/oauth/bc', async (request, response, next) => {
     return response.redirect(process.env.CLIENT_URL);
   }
 
-  dumpAccessToken(bcTokenResponse.body.access_token);
+  dumpAccessToken(bcTokenResponse.body.access_token, 'LOG IN');
   
   const raTokenPayload = await retrieveBasecampInfo(bcTokenResponse, next);
 
