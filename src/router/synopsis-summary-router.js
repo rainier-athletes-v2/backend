@@ -39,6 +39,7 @@ const fetchAllProjects = async (url, auth, next) => {
     // eslint-disable-next-line no-await-in-loop
     // projects = await fetch(pageUrl(url, page), auth, next, `SR Summary: Error fetching page ${page} of projects`);
   } while (projects.get('Link'));
+  console.log(`${page - 1} pages of projects found`);
   return allProjects;
 };
 
@@ -85,26 +86,30 @@ const findStudentMessageBoardUrl = async (request, next) => {
   if (projects.length === 0) {
     return next(new HttpErrors(500, 'SR Summary GET: No projects found associated with the mentor', { expose: false }));  
   }
-  console.log('found', projects.length, 'projects');
+  console.log('found', projects.length, 'topic (student) projects');
   const menteesProjects = [];
   for (let i = 0; i < projects.length; i++) {
     // eslint-disable-next-line no-await-in-loop
     const people = await fetchProjectPeople(projects[i], accessToken, next);
-    // console.log('project', i, 'has', people.length, 'people');
-    people.forEach((person) => {
-      if (person.email_address.toLowerCase().trim() === studentEmail.toLowerCase().trim()) {
+    let menteeFound = false;
+    for (let p = 0; p < people.length; p++) {
+      if (people[p].email_address.toLowerCase().trim() === studentEmail.toLowerCase().trim()) {
         menteesProjects.push(projects[i]);
+        menteeFound = true;
+        console.log('mentee found');
+        break;
       }
-    });
+    }
+    if (menteeFound) break;
   }
 
-  console.log('found', menteesProjects.length, 'joint projects');
-  if (menteesProjects.length > 1) {
-    console.log('More than 1 project with both mentor and mentee as members!');
-    console.log(JSON.stringify(menteesProjects, null, 2));
-    // for now...
-    return next(new HttpErrors(500, 'SR Summary GET: More than 1 project with both mentor and mentee as members!', { expose: false })); 
-  }
+  // console.log('found', menteesProjects.length, 'joint projects');
+  // if (menteesProjects.length > 1) {
+  //   console.log('More than 1 project with both mentor and mentee as members!');
+  //   console.log(JSON.stringify(menteesProjects, null, 2));
+  //   // for now...
+  //   return next(new HttpErrors(500, 'SR Summary GET: More than 1 project with both mentor and mentee as members!', { expose: false })); 
+  // }
   if (menteesProjects.length === 0) {
     return undefined;
   }
@@ -175,16 +180,7 @@ synopsisSummaryRouter.post('/api/v2/synopsissummary', bearerAuthMiddleware, asyn
     content: prepContentForBasecamp(content),
     status: 'active',
   };
-  
-  // console.log('sr post calling findStudentMessageBoardUrl');
-  // const studentMessageBoardUrl = await findStudentMessageBoardUrl(request);
-  // if (!studentMessageBoardUrl) {
-  //   return next(new HttpErrors(500, 'SR Summary: No message board found for mentor and student', { expose: false }));
-  // }
 
-  console.log('sr summaryRouter sending', JSON.stringify(message, null, 2));
-  console.log('to url', messageBoardUrl);
-  console.log('with auth token', request.accessToken);
   let result;
   try {
     result = await superagent.post(messageBoardUrl)
