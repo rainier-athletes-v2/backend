@@ -76,6 +76,9 @@ const _prepPointTrackers = (sr) => {
   pt.records = sr.PointTrackers__r.records.map((p) => {
     delete p.Class__r;
     delete p.Name;
+    if (p.Grade__c === 'N/A') {
+      p.Grade__c = null;
+    }
     return p;
   });
   return pt;
@@ -99,6 +102,7 @@ synopsisReportRouter.put('/api/v2/synopsisreport', bearerAuthMiddleware, async (
 
   const srId = synopsisReport.Id;
   const srName = synopsisReport.Name;
+  // console.log('before prepSR', JSON.stringify(synopsisReport.PointTrackers__r));
   const preppedSR = _prepSynopsisReport(synopsisReport); // prepair SynopsisReport__c for update
   console.log('making patch request');
   try {
@@ -110,6 +114,7 @@ synopsisReportRouter.put('/api/v2/synopsisreport', bearerAuthMiddleware, async (
   }
   console.log('back from patch call');
   if (!synopsisReport.summer_SR) {
+    // console.log('point trackers to be prepped', JSON.stringify(synopsisReport.PointTrackers__r));
     console.log('saving point trackers');
     const preppedPT = _prepPointTrackers(synopsisReport);
     let ptResult;
