@@ -108,6 +108,7 @@ export const thisSynopsisReport = reportId => (
     Summer_family_connection_other_notes__c,
     Summer_family_connection_status__c,
     Summer_next_camp_notes__c,
+    Summer_question_of_the_week_answered__c,
     Summer_question_of_the_week_response__c,
     Summer_weekly_connection_made__c,
     Summer_weekly_connection_other_notes__c,
