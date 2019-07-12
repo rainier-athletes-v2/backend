@@ -39,7 +39,7 @@ const fetchAllProjects = async (url, auth, next) => {
     // eslint-disable-next-line no-await-in-loop
     // projects = await fetch(pageUrl(url, page), auth, next, `SR Summary: Error fetching page ${page} of projects`);
   } while (projects.get('Link'));
-  console.log(`${page - 1} pages of projects found`);
+  // console.log(`${page - 1} pages of projects found`);
   return allProjects;
 };
 
@@ -63,14 +63,14 @@ const findStudentMessageBoardUrl = async (request, next) => {
   const { studentEmail } = request.query;
   const authorizationUrl = 'https://launchpad.37signals.com/authorization.json';
 
-  console.log('requesting authorization');
+  // console.log('requesting authorization');
   const auth = await fetch(authorizationUrl, accessToken, next, 'SR Summary: BC authorization.json request error');
 
   const raAccount = auth.body.accounts ? auth.body.accounts.find(a => a.name.toLowerCase().trim() === 'rainier athletes') : null;
   if (!raAccount) {
     return next(new HttpErrors(403, 'SR Summary GET: Rainier Athletes account not found among authorization response accounts', { expose: false }));  
   }
-  console.log('raAccount', JSON.stringify(raAccount, null, 2));
+  // console.log('raAccount', JSON.stringify(raAccount, null, 2));
   // Get all of mentor's projects (GET /projects.json)
   // for each project id = N
   //     get all the people associated with the project  (GET /projects/N/people.json)
@@ -81,12 +81,12 @@ const findStudentMessageBoardUrl = async (request, next) => {
   // create new message in selected message board (POST /buckets/1/message_boards/3/messages.json) 
 
   const projectsUrl = `${raAccount.href}/projects.json`;
-  console.log('projectsUrl', projectsUrl);
+  // console.log('projectsUrl', projectsUrl);
   const projects = await fetchAllProjects(projectsUrl, accessToken, next);
   if (projects.length === 0) {
     return next(new HttpErrors(500, 'SR Summary GET: No projects found associated with the mentor', { expose: false }));  
   }
-  console.log('found', projects.length, 'topic (student) projects');
+  // console.log('found', projects.length, 'topic (student) projects');
   const menteesProjects = [];
   for (let i = 0; i < projects.length; i++) {
     // eslint-disable-next-line no-await-in-loop
@@ -96,7 +96,7 @@ const findStudentMessageBoardUrl = async (request, next) => {
       if (people[p].email_address.toLowerCase().trim() === studentEmail.toLowerCase().trim()) {
         menteesProjects.push(projects[i]);
         menteeFound = true;
-        console.log('mentee found');
+        // console.log('mentee found');
         break;
       }
     }
@@ -132,7 +132,7 @@ synopsisSummaryRouter.get('/api/v2/synopsissummary', bearerAuthMiddleware, async
   // request.query = {
   //   basecampToken, studentEmail
   // }
-  console.log('studentEmail', request.query.studentEmail, 'basecampToken truthy?', !!request.query.basecampToken);
+  // console.log('studentEmail', request.query.studentEmail, 'basecampToken truthy?', !!request.query.basecampToken);
   if (!request.query) {
     return next(new HttpErrors(403, 'SR Summary GET: Missing request query', { expose: false }));
   }
@@ -144,13 +144,13 @@ synopsisSummaryRouter.get('/api/v2/synopsissummary', bearerAuthMiddleware, async
 
   request.accessToken = jsonWebToken.verify(basecampToken, process.env.SECRET).accessToken;
 
-  console.log('sr get calling findStudentMessageBoardUrl');
+  // console.log('sr get calling findStudentMessageBoardUrl');
   const studentMessageBoardUrl = await findStudentMessageBoardUrl(request);
   if (!studentMessageBoardUrl) {
     return next(new HttpErrors(500, 'SR Summary GET: No message board found under mentor with student', { expose: false }));
   }
   console.log('GET returning', studentMessageBoardUrl);
-  response.send({ messageBoardUrl: studentMessageBoardUrl }).status(200);
+  return response.send({ messageBoardUrl: studentMessageBoardUrl }).status(200);
 });
 
 // post synopsis report summary to student's message board
@@ -192,7 +192,7 @@ synopsisSummaryRouter.post('/api/v2/synopsissummary', bearerAuthMiddleware, asyn
     console.log('Error posting message to basecamp', JSON.stringify(err, null, 2));
     return next(new HttpErrors(500, 'SR Summary POST: Error posting summary message', { expose: false }));
   }
-  console.log('returning good status', result.status);
+  console.log('post to basecamp returning good status', result.status);
   return response.sendStatus(201);
 });
 
