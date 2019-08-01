@@ -145,7 +145,7 @@ synopsisSummaryRouter.get('/api/v2/synopsissummary', bearerAuthMiddleware, async
   request.accessToken = jsonWebToken.verify(basecampToken, process.env.SECRET).accessToken;
 
   // console.log('sr get calling findStudentMessageBoardUrl');
-  const studentMessageBoardUrl = await findStudentMessageBoardUrl(request);
+  const studentMessageBoardUrl = await findStudentMessageBoardUrl(request, next);
   if (!studentMessageBoardUrl) {
     return next(new HttpErrors(500, 'SR Summary GET: No message board found under mentor with student', { expose: false }));
   }

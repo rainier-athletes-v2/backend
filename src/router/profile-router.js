@@ -33,6 +33,7 @@ profileRouter.get('/api/v2/profiles/myStudents', bearerAuthMiddleware, async (re
 
     const myStudentsQuery = `?q=${soql.myStudents(contactId)}`; 
     let relatedContacts;
+    console.log('sending get to', `${queryUrl}${myStudentsQuery}`);
     try {
       relatedContacts = await superagent.get(`${queryUrl}${myStudentsQuery}`)
         .set('Authorization', `Bearer ${accessToken}`);
@@ -101,7 +102,6 @@ profileRouter.get('/api/v2/profiles/myStudents', bearerAuthMiddleware, async (re
     });
     const relBodies = await Promise.all(relPromises);
     const relRecords = relBodies.map(b => (b.body.records[0] ? b.body.records[0] : {}));
- 
     // add teacher name to each studentContact's studentData. relRecords is an array of objects, one per student.
     relRecords.forEach((teacher) => {
       if (teacher.npe4__Contact__c) { // teacher object isn't empty
@@ -113,6 +113,7 @@ profileRouter.get('/api/v2/profiles/myStudents', bearerAuthMiddleware, async (re
     });
 
     // fetch student team info
+    
     const affPromises = [];
     studentContacts.forEach((student) => {
       const affiliationsQuery = `?q=${soql.studentTeamAffiliations(student.id)}`;
@@ -128,6 +129,7 @@ profileRouter.get('/api/v2/profiles/myStudents', bearerAuthMiddleware, async (re
     });
     const affBodies = await Promise.all(affPromises);
     const affRecords = affBodies.map(b => b.body.records);
+    console.log('affiliated records (teams)', affRecords);
     // console.log(JSON.stringify(affRecords, null, 2));
     const teamData = [];
     affRecords.forEach((student) => {
@@ -159,7 +161,7 @@ profileRouter.get('/api/v2/profiles/myStudents', bearerAuthMiddleware, async (re
         // studentRef.studentData.sports.push({ ...team.sport });
       });
     });
-
+    
     // fetch student family members
     const accPromises = [];
     studentContacts.forEach((student) => {
