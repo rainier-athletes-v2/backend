@@ -33,7 +33,7 @@ profileRouter.get('/api/v2/profiles/myStudents', bearerAuthMiddleware, async (re
 
     const myStudentsQuery = `?q=${soql.myStudents(contactId)}`; 
     let relatedContacts;
-    console.log('sending get to', `${queryUrl}${myStudentsQuery}`);
+ 
     try {
       relatedContacts = await superagent.get(`${queryUrl}${myStudentsQuery}`)
         .set('Authorization', `Bearer ${accessToken}`);
@@ -129,8 +129,7 @@ profileRouter.get('/api/v2/profiles/myStudents', bearerAuthMiddleware, async (re
     });
     const affBodies = await Promise.all(affPromises);
     const affRecords = affBodies.map(b => b.body.records);
-    console.log('affiliated records (teams)', affRecords);
-    // console.log(JSON.stringify(affRecords, null, 2));
+    
     const teamData = [];
     affRecords.forEach((student) => {
       // student is an array of affiliation objects. Query returns only current teams with end date >= today

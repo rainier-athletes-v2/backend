@@ -149,7 +149,6 @@ synopsisSummaryRouter.get('/api/v2/synopsissummary', bearerAuthMiddleware, async
   if (!studentMessageBoardUrl) {
     return next(new HttpErrors(500, 'SR Summary GET: No message board found under mentor with student', { expose: false }));
   }
-  console.log('GET returning', studentMessageBoardUrl);
   return response.send({ messageBoardUrl: studentMessageBoardUrl }).status(200);
 });
 
@@ -181,18 +180,15 @@ synopsisSummaryRouter.post('/api/v2/synopsissummary', bearerAuthMiddleware, asyn
     status: 'active',
   };
 
-  let result;
   try {
-    result = await superagent.post(messageBoardUrl)
+    await superagent.post(messageBoardUrl)
       .set('Authorization', `Bearer ${request.accessToken}`)
       .set('User-Agent', 'Rainier Athletes Mentor Portal (selpilot@gmail.com)')
       .set('Content-Type', 'application/json')
       .send(message);
   } catch (err) {
-    console.log('Error posting message to basecamp', JSON.stringify(err, null, 2));
     return next(new HttpErrors(500, 'SR Summary POST: Error posting summary message', { expose: false }));
   }
-  console.log('post to basecamp returning good status', result.status);
   return response.sendStatus(201);
 });
 
