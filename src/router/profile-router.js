@@ -79,7 +79,11 @@ profileRouter.get('/api/v2/profiles/myStudents', bearerAuthMiddleware, async (re
         },
       };
       if (studentObj.pointTracker) {
-        profile.studentData.schoolName = studentObj.pointTracker.records[0].Class__r.School__r.Name;
+        if (studentObj.pointTracker.records[0].Class__r) {
+          profile.studentData.schoolName = studentObj.pointTracker.records[0].Class__r.School__r.Name;
+        } else {
+          profile.studentData.schoolName = 'Unknown';
+        }
       } else {
         profile.studentData.schoolName = 'Unknown';
       }
