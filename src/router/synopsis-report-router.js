@@ -31,6 +31,26 @@ synopsisReportRouter.get('/api/v2/synopsisreports/:studentId', bearerAuthMiddlew
   return response.json(srQueryResults.body).status(200);  
 });
 
+const translateGradesToLetters = (pointTrackers) => {
+  console.log(pointTrackers);
+  for (let i = 0; i < pointTrackers.length; i++) {
+    if (pointTrackers[i].Grade__c === null) {
+      pointTrackers[i].Grade__c = 'N/A';
+    } else if (pointTrackers[i].Grade__c >= 90) {
+      pointTrackers[i].Grade__c = 'A';
+    } else if (pointTrackers[i].Grade__c >= 80) {
+      pointTrackers[i].Grade__c = 'B';
+    } else if (pointTrackers[i].Grade__c >= 70) {
+      pointTrackers[i].Grade__c = 'C';
+    } else if (pointTrackers[i].Grade__c >= 60) {
+      pointTrackers[i].Grade__c = 'D';
+    } else {
+      pointTrackers[i].Grade__c = 'F';
+    }
+  }
+  console.log('done translating to letters');
+};
+
 synopsisReportRouter.get('/api/v2/synopsisreport/:reportId', bearerAuthMiddleware, async (request, response, next) => {
   if (!['mentor', 'admin'].includes(request.profile.role)) {
     return next(new HttpErrors(403, 'SynopsisReport GET: User not authorized.'));
@@ -52,8 +72,29 @@ synopsisReportRouter.get('/api/v2/synopsisreport/:reportId', bearerAuthMiddlewar
   } catch (err) {
     return next(new HttpErrors(err.status, `Error retrieving Synopsis Report ${request.params.reportId}`, { expose: false }));
   }
+
+  translateGradesToLetters(srQueryResults.body.records[0].PointTrackers__r.records);
+  console.log('returning from get');
   return response.json(srQueryResults.body).status(200);  
 });
+
+const translateLettersToGrades = (pointTracker) => {
+  console.log(pointTracker);
+  if (pointTracker.Grade__c === 'N/A') {
+    pointTracker.Grade__c = null;
+  } else if (pointTracker.Grade__c === 'A') {
+    pointTracker.Grade__c = 90;
+  } else if (pointTracker.Grade__c === 'B') {
+    pointTracker.Grade__c = 80;
+  } else if (pointTracker.Grade__c === 'C') {
+    pointTracker.Grade__c = 70;
+  } else if (pointTracker.Grade__c === 'D') {
+    pointTracker.Grade__c = 60;
+  } else {
+    pointTracker.Grade__c = 0;
+  }
+  console.log('done translating to numbers');
+};
 
 const _prepSynopsisReport = (sr) => {
   // strip out properties that will cause SF PATCH (update) request to blow up
@@ -76,9 +117,7 @@ const _prepPointTrackers = (sr) => {
   pt.records = sr.PointTrackers__r.records.map((p) => {
     delete p.Class__r;
     delete p.Name;
-    if (p.Grade__c === 'N/A') {
-      p.Grade__c = null;
-    }
+    translateLettersToGrades(p);
     return p;
   });
   return pt;
