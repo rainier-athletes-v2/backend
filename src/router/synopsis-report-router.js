@@ -32,7 +32,6 @@ synopsisReportRouter.get('/api/v2/synopsisreports/:studentId', bearerAuthMiddlew
 });
 
 const translateGradesToLetters = (pointTrackers) => {
-  console.log(pointTrackers);
   for (let i = 0; i < pointTrackers.length; i++) {
     if (pointTrackers[i].Grade__c === null) {
       pointTrackers[i].Grade__c = 'N/A';
@@ -48,7 +47,6 @@ const translateGradesToLetters = (pointTrackers) => {
       pointTrackers[i].Grade__c = 'F';
     }
   }
-  console.log('done translating to letters');
 };
 
 synopsisReportRouter.get('/api/v2/synopsisreport/:reportId', bearerAuthMiddleware, async (request, response, next) => {
@@ -74,12 +72,10 @@ synopsisReportRouter.get('/api/v2/synopsisreport/:reportId', bearerAuthMiddlewar
   }
 
   translateGradesToLetters(srQueryResults.body.records[0].PointTrackers__r.records);
-  console.log('returning from get');
   return response.json(srQueryResults.body).status(200);  
 });
 
 const translateLettersToGrades = (pointTracker) => {
-  console.log(pointTracker);
   if (pointTracker.Grade__c === 'N/A') {
     pointTracker.Grade__c = null;
   } else if (pointTracker.Grade__c === 'A') {
@@ -93,7 +89,6 @@ const translateLettersToGrades = (pointTracker) => {
   } else {
     pointTracker.Grade__c = 0;
   }
-  console.log('done translating to numbers');
 };
 
 const _prepSynopsisReport = (sr) => {
