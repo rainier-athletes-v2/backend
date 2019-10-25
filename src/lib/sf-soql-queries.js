@@ -71,6 +71,8 @@ export const thisSynopsisReport = reportId => (
     Student__r.Student_Grade__c,
     Student__r.npe01__HomeEmail__c,
     Mentor_Is_Substitute__c,
+    Mentor__r.Name, 
+    Mentor__r.npe01__HomeEmail__c,
     Weekly_Check_In_Status__c, 
     Weekly_Check_In_Missed_Reason__c,
     
