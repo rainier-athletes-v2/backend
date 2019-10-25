@@ -72,6 +72,7 @@ export const thisSynopsisReport = reportId => (
     Student__r.npe01__HomeEmail__c,
     Mentor_Is_Substitute__c,
     Weekly_Check_In_Status__c, 
+    Weekly_Check_In_Missed_Reason__c,
     
     Student_Touch_Points__c,
     Student_Touch_Points_Other__c,
@@ -91,6 +92,7 @@ export const thisSynopsisReport = reportId => (
     One_Team_Notes__c,
     
     Point_Sheet_Status__c,
+    Point_Sheet_Status_Reason__c,
     Point_Sheet_Status_Notes__c,
     
     Earned_Playing_Time__c,
