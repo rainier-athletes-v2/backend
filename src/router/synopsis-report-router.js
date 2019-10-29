@@ -100,6 +100,7 @@ const _prepSynopsisReport = (sr) => {
   delete newSR.Week__c;
   delete newSR.Start_Date__c;
   delete newSR.Student__r;
+  delete newSR.Mentor__r;
   delete newSR.PointTrackers__r;
   delete newSR.summer_SR;
   return newSR;
