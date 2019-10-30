@@ -14,6 +14,7 @@ import profileRouter from '../router/profile-router';
 import synopsisReportRouter from '../router/synopsis-report-router';
 import synopsisPdfRouter from '../router/synopsis-pdf-router';
 import synopsisSummaryRouter from '../router/synopsis-summary-router';
+import imageRouter from '../router/image-router';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -48,6 +49,7 @@ app.use(profileRouter);
 app.use(synopsisReportRouter);
 app.use(synopsisPdfRouter);
 app.use(synopsisSummaryRouter);
+app.use(imageRouter);
 
 app.all('*', (request, response, next) => {
   logger.log(logger.INFO, 'returning 404 from the catch/all route');
