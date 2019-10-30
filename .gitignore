@@ -9,6 +9,7 @@ server.crt
 server.csr 
 server.pem
 coverage
+uploads/
 
 # Created by https://www.gitignore.io/api/node,macos,visualstudiocode
 

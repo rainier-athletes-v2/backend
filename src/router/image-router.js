@@ -1,27 +1,47 @@
 import { Router } from 'express';
 import HttpErrors from 'http-errors';
-import superagent from 'superagent';
+import fetch from 'node-fetch';
 import multer from 'multer';
 import bearerAuthMiddleware from '../lib/middleware/bearer-auth-middleware';
-// import logger from '../lib/logger';
-// import * as soql from '../lib/sf-soql-queries';
 
 const imageRouter = new Router();
-const multerUpload = multer({ dest: 'uploads/' });
+const multerStorage = multer.memoryStorage();
+const multerUpload = multer({ storage: multerStorage });
 
-imageRouter.post('/api/v2/image/upload', bearerAuthMiddleware, multerUpload.single('image'), (request, response, next) => {
+imageRouter.post('/api/v2/image/upload', bearerAuthMiddleware, multerUpload.single('image'), async (request, response, next) => {
   if (!request.body) {
     return next(new HttpErrors(403, 'Single Image Upload POST: Missing request body', { expose: false }));
   }
   if (!request.file) {
     return next(new HttpErrors(403, 'Single Image Upload POST: Missing file in request body', { expose: false }));
   }
+  if (!request.profile.accessToken) {
+    return next(new HttpErrors(403, 'Single Image Upload POST: Request missing basecamp token', { expose: false }));
+  }
 
-  const { file } = request;
-  console.log(`name: ${file.originalname}, size: ${file.size}, type: ${file.mimetype}`);
-  // console.log(JSON.stringify(files));
-  return response.json(['file size', file.size]).status(200);
-  // return next(new HttpErrors(500, 'User profile missing from request.', { expose: false }));
+  const { file, body, profile } = request;
+  
+  let bcResponse;
+  try { 
+    bcResponse = await fetch(`https://3.basecampapi.com/3595417/attachments.json?name=${body.name}`, {
+      method: 'post',
+      body: file.buffer,
+      headers: { 
+        Authorization: `Bearer ${profile.accessToken}`,
+        'Content-Type': file.mimetype, 
+        'Content-Length': file.size,
+      },
+    });
+  } catch (error) {
+    return next(new HttpErrors(error.statusCode, 'Error sending file to basecamp', { expose: false }));
+  }
+  let responseJson;
+  try {
+    responseJson = await bcResponse.json();
+  } catch (jsonError) {
+    return next(new HttpErrors(jsonError.statusCode, 'Error retrieving JSON attachment response', { expose: false }));
+  }
+  return response.json(responseJson).status(bcResponse.status);
 });
 
 export default imageRouter;
