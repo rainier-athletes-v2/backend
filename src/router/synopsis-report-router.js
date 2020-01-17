@@ -71,7 +71,10 @@ synopsisReportRouter.get('/api/v2/synopsisreport/:reportId', bearerAuthMiddlewar
     return next(new HttpErrors(err.status, `Error retrieving Synopsis Report ${request.params.reportId}`, { expose: false }));
   }
 
-  translateGradesToLetters(srQueryResults.body.records[0].PointTrackers__r.records);
+  if (srQueryResults.body.records[0].PointTrackers__r) {
+    translateGradesToLetters(srQueryResults.body.records[0].PointTrackers__r.records);
+  }
+
   return response.json(srQueryResults.body).status(200);  
 });
 
