@@ -10,7 +10,7 @@ const pageUrl = (url, page) => (`${url}?page=${page}`);
 
 const fetch = async (url, auth, next, errorMsg) => {
   let res;
-  // console.log('fetch url', url, 'auth', auth);
+
   try {
     res = await superagent.get(url)
       .set('Authorization', `Bearer ${auth}`)
@@ -19,7 +19,7 @@ const fetch = async (url, auth, next, errorMsg) => {
   } catch (err) {
     return next(new HttpErrors(err.status, errorMsg, { expose: false }));
   }
-  // console.log('fetch', res.status);
+
   return res;
 };
 
@@ -29,21 +29,16 @@ const fetchAllProjects = async (url, auth, next) => {
   let projects;
   do {
     // eslint-disable-next-line no-await-in-loop
-    console.log('*** fetching projects from', pageUrl(url, page));
     projects = await fetch(pageUrl(url, page), auth, next, `SR Summary GET: Error fetching page ${page} of projects`);
-    console.log('*** projects', JSON.stringify(projects.body, null, 2));
+
     projects.body.forEach((p) => {
-      console.log('*** project purpose', p.purpose.toLowerCase().trim());
       if (p.purpose.toLowerCase().trim() === 'topic') { // mentee projects have purpose === topic
         allProjects.push(p);
       }
     });
     page += 1;
-    // eslint-disable-next-line no-await-in-loop
-    // projects = await fetch(pageUrl(url, page), auth, next, `SR Summary: Error fetching page ${page} of projects`);
   } while (projects.get('Link'));
-  // console.log(`${page - 1} pages of projects found`);
-  console.log('*** returning projects', JSON.stringify(allProjects, null, 2));
+
   return allProjects;
 };
 
@@ -67,9 +62,7 @@ const findStudentMessageBoardUrl = async (request, next) => {
   const { studentEmail } = request.query;
   const authorizationUrl = 'https://launchpad.37signals.com/authorization.json';
 
-  // console.log('requesting authorization');
   const auth = await fetch(authorizationUrl, accessToken, next, 'SR Summary: BC authorization.json request error');
-  console.log('**** bc auth.body', JSON.stringify(auth.body, null, 2));
   const raAccount = auth.body.accounts ? auth.body.accounts.find(a => a.name.toLowerCase().trim() === 'rainier athletes') : null;
   if (!raAccount) {
     return next(new HttpErrors(403, 'SR Summary GET: Rainier Athletes account not found among authorization response accounts', { expose: false }));  
@@ -85,12 +78,12 @@ const findStudentMessageBoardUrl = async (request, next) => {
   // create new message in selected message board (POST /buckets/1/message_boards/3/messages.json) 
 
   const projectsUrl = `${raAccount.href}/projects.json`;
-  console.log('*** projectsUrl', projectsUrl);
+
   const projects = await fetchAllProjects(projectsUrl, accessToken, next);
   if (projects.length === 0) {
     return next(new HttpErrors(500, 'SR Summary GET: No projects found associated with the mentor', { expose: false }));  
   }
-  // console.log('found', projects.length, 'topic (student) projects');
+ 
   const menteesProjects = [];
   for (let i = 0; i < projects.length; i++) {
     // eslint-disable-next-line no-await-in-loop
@@ -136,7 +129,6 @@ synopsisSummaryRouter.get('/api/v2/synopsissummary', bearerAuthMiddleware, async
   // request.query = {
   //   basecampToken, studentEmail
   // }
-  // console.log('studentEmail', request.query.studentEmail, 'basecampToken truthy?', !!request.query.basecampToken);
   if (!request.query) {
     return next(new HttpErrors(403, 'SR Summary GET: Missing request query', { expose: false }));
   }
@@ -148,7 +140,6 @@ synopsisSummaryRouter.get('/api/v2/synopsissummary', bearerAuthMiddleware, async
 
   request.accessToken = jsonWebToken.verify(basecampToken, process.env.SECRET).accessToken;
 
-  // console.log('sr get calling findStudentMessageBoardUrl');
   const studentMessageBoardUrl = await findStudentMessageBoardUrl(request, next);
   if (!studentMessageBoardUrl) {
     return next(new HttpErrors(500, 'SR Summary GET: No message board found under mentor with student', { expose: false }));
@@ -194,7 +185,7 @@ synopsisSummaryRouter.post('/api/v2/synopsissummary', bearerAuthMiddleware, asyn
   } catch (err) {
     return next(new HttpErrors(500, 'SR Summary POST: Error posting summary message', { expose: false }));
   }
-  // console.log('basecamp post response', JSON.stringify(summaryPost, null, 2));
+
   return response.sendStatus(201);
 });
 
