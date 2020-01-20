@@ -31,7 +31,7 @@ const fetchAllProjects = async (url, auth, next) => {
     // eslint-disable-next-line no-await-in-loop
     console.log('*** fetching projects from', pageUrl(url, page));
     projects = await fetch(pageUrl(url, page), auth, next, `SR Summary GET: Error fetching page ${page} of projects`);
-    console.log('*** projects', JSON.stringify(projects, null, 2));
+    console.log('*** projects', JSON.stringify(projects.body, null, 2));
     projects.body.forEach((p) => {
       if (p.purpose.toLowerCase().trim() === 'topic') { // mentee projects have purpose === topic
         allProjects.push(p);
