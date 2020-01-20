@@ -29,7 +29,9 @@ const fetchAllProjects = async (url, auth, next) => {
   let projects;
   do {
     // eslint-disable-next-line no-await-in-loop
+    console.log('*** fetching projects from', pageUrl(url, page));
     projects = await fetch(pageUrl(url, page), auth, next, `SR Summary GET: Error fetching page ${page} of projects`);
+    console.log('*** projects', JSON.stringify(projects, null, 2));
     projects.body.forEach((p) => {
       if (p.purpose.toLowerCase().trim() === 'topic') { // mentee projects have purpose === topic
         allProjects.push(p);
@@ -65,7 +67,7 @@ const findStudentMessageBoardUrl = async (request, next) => {
 
   // console.log('requesting authorization');
   const auth = await fetch(authorizationUrl, accessToken, next, 'SR Summary: BC authorization.json request error');
-
+  console.log('**** bc auth.body', JSON.stringify(auth.body, null, 2));
   const raAccount = auth.body.accounts ? auth.body.accounts.find(a => a.name.toLowerCase().trim() === 'rainier athletes') : null;
   if (!raAccount) {
     return next(new HttpErrors(403, 'SR Summary GET: Rainier Athletes account not found among authorization response accounts', { expose: false }));  
@@ -81,7 +83,7 @@ const findStudentMessageBoardUrl = async (request, next) => {
   // create new message in selected message board (POST /buckets/1/message_boards/3/messages.json) 
 
   const projectsUrl = `${raAccount.href}/projects.json`;
-  // console.log('projectsUrl', projectsUrl);
+  console.log('*** projectsUrl', projectsUrl);
   const projects = await fetchAllProjects(projectsUrl, accessToken, next);
   if (projects.length === 0) {
     return next(new HttpErrors(500, 'SR Summary GET: No projects found associated with the mentor', { expose: false }));  
