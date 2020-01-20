@@ -17,7 +17,7 @@ export const myStudents = mentorId => (
     Student__r.Phone,
     Student__r.HomePhone,
     Student__r.MobilePhone,
-    Student__r.Email,
+    Student__r.npe01__HomeEmail__c,
     Student__r.StudentGoogleCalendarUrl__c,
     Student__r.StudentSynopsisReportArchiveUrl__c,
     Student__r.Synergy_Username__c,
