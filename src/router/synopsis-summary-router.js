@@ -180,6 +180,7 @@ synopsisSummaryRouter.post('/api/v2/synopsissummary', bearerAuthMiddleware, asyn
     status: 'active',
   };
 
+  // let summaryPost;
   try {
     await superagent.post(messageBoardUrl)
       .set('Authorization', `Bearer ${request.accessToken}`)
@@ -189,6 +190,7 @@ synopsisSummaryRouter.post('/api/v2/synopsissummary', bearerAuthMiddleware, asyn
   } catch (err) {
     return next(new HttpErrors(500, 'SR Summary POST: Error posting summary message', { expose: false }));
   }
+  // console.log('basecamp post response', JSON.stringify(summaryPost, null, 2));
   return response.sendStatus(201);
 });
 
