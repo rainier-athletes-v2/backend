@@ -33,6 +33,7 @@ const fetchAllProjects = async (url, auth, next) => {
     projects = await fetch(pageUrl(url, page), auth, next, `SR Summary GET: Error fetching page ${page} of projects`);
     console.log('*** projects', JSON.stringify(projects.body, null, 2));
     projects.body.forEach((p) => {
+      console.log('*** project purpose', p.purpose.toLowerCase().trim());
       if (p.purpose.toLowerCase().trim() === 'topic') { // mentee projects have purpose === topic
         allProjects.push(p);
       }
@@ -42,6 +43,7 @@ const fetchAllProjects = async (url, auth, next) => {
     // projects = await fetch(pageUrl(url, page), auth, next, `SR Summary: Error fetching page ${page} of projects`);
   } while (projects.get('Link'));
   // console.log(`${page - 1} pages of projects found`);
+  console.log('*** returning projects', JSON.stringify(allProjects, null, 2));
   return allProjects;
 };
 
