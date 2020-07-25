@@ -130,6 +130,7 @@ export const thisSynopsisReport = reportId => (
     Summer_conn_no_show__c,
     Summer_conn_missed_other__c,
     Summer_weekly_connection_other_notes__c,
+    Summer_additional_team_comments__c,
 
     (SELECT 
       Id, 
