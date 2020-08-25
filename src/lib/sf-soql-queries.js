@@ -56,7 +56,7 @@ export const recentSynopsisReports = studentId => (
     (SELECT Id FROM PointTrackers__r)
   FROM SynopsisReport__c 
   WHERE Student__c = '${studentId}' 
-  ORDER BY Start_Date__c DESC LIMIT 3`
+  ORDER BY Start_Date__c DESC LIMIT 2`
 );
 
 // retrieve data for the synopsis report with id = <id>. Needs to have more fields addded to get complete SR/PT built.
