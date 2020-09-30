@@ -38,8 +38,6 @@ const fetchAllProjects = async (url, auth, next) => {
     });
     page += 1;
   } while (projects.get('Link'));
-  console.log('projects');
-  console.log(JSON.stringify, allProjects, null, 2);
   return allProjects;
 };
 
@@ -55,8 +53,6 @@ const fetchProjectPeople = async (project, auth, next) => {
     page += 1;
     // eslint-disable-next-line no-await-in-loop
   } while (people.get('Link'));
-  console.log(allPeople.length, 'people found for project', project.name);
-  console.log(JSON.stringify(allPeople, null, 2));
   return allPeople;
 };
 
@@ -76,6 +72,7 @@ const findStudentMessageBoardUrl = async (request, next) => {
   //     get all the people associated with the project  (GET /projects/N/people.json)
   //     if student is in list of people
   //          add N to list of projects that include both mentor and student
+  //          exit loops
   // If list of projects is longer than 1 entry (this will be rare but could happen)
   //     get mentor's help disambiguating (pick the project to post message to)
   // create new message in selected message board (POST /buckets/1/message_boards/3/messages.json) 
@@ -86,18 +83,17 @@ const findStudentMessageBoardUrl = async (request, next) => {
   if (projects.length === 0) {
     return next(new HttpErrors(500, 'SR Summary GET: No projects found associated with the mentor', { expose: false }));  
   }
- 
+  console.log(projects.length, 'projects found with purpose === topic');
   const menteesProjects = [];
   for (let i = 0; i < projects.length; i++) {
     // eslint-disable-next-line no-await-in-loop
     const people = await fetchProjectPeople(projects[i], accessToken, next);
     let menteeFound = false;
+    console.log(people.length, 'people found for project', projects[i].name);
     for (let p = 0; p < people.length; p++) {
       if (people[p].email_address.toLowerCase().trim() === studentEmail.toLowerCase().trim()) {
         menteesProjects.push(projects[i]);
         menteeFound = true;
-        console.log(studentEmail, 'found');
-        console.log(JSON.stringify(projects[i], null, 2));
         break;
       }
     }
@@ -108,6 +104,8 @@ const findStudentMessageBoardUrl = async (request, next) => {
     console.log('no projects found that include mentee', studentEmail);
     return undefined;
   }
+  console.log(studentEmail, ' project found:', menteesProjects[0].name);
+  console.log(JSON.stringify(menteesProjects[0], null, 2));
   const messageBoard = menteesProjects[0].dock.find(d => d.name === 'message_board') || null;
   const messageBoardUrl = messageBoard && messageBoard.url;
   const messageBoardPostUrl = messageBoardUrl && messageBoardUrl.replace('.json', '/messages.json');
