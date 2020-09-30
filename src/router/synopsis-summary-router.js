@@ -108,7 +108,6 @@ const findStudentMessageBoardUrl = async (request, next) => {
     return undefined;
   }
   console.log(studentEmail, ' project found:', menteesProjects[0].name);
-  console.log(JSON.stringify(menteesProjects[0], null, 2));
   const messageBoard = menteesProjects[0].dock.find(d => d.name === 'message_board') || null;
   const messageBoardUrl = messageBoard && messageBoard.url;
   const messageBoardPostUrl = messageBoardUrl && messageBoardUrl.replace('.json', '/messages.json');
