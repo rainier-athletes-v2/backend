@@ -147,6 +147,7 @@ synopsisReportRouter.put('/api/v2/synopsisreport', bearerAuthMiddleware, async (
       .set('Authorization', `Bearer ${accessToken}`)
       .send(preppedSR);
   } catch (err) {
+    console.log('error', JSON.stringify(err, null, 2));
     return next(new HttpErrors(err.status, `Error Updating Synopsis Report ${request.body.Id}`, { expose: false }));
   }
   if (!synopsisReport.summer_SR) {

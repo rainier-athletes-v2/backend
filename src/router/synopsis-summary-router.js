@@ -38,7 +38,8 @@ const fetchAllProjects = async (url, auth, next) => {
     });
     page += 1;
   } while (projects.get('Link'));
-
+  console.log('projects');
+  console.log(JSON.stringify, allProjects, null, 2);
   return allProjects;
 };
 
@@ -54,6 +55,8 @@ const fetchProjectPeople = async (project, auth, next) => {
     page += 1;
     // eslint-disable-next-line no-await-in-loop
   } while (people.get('Link'));
+  console.log(allPeople.length, 'people found for project', project.name);
+  console.log(JSON.stringify(allPeople, null, 2));
   return allPeople;
 };
 
@@ -67,7 +70,7 @@ const findStudentMessageBoardUrl = async (request, next) => {
   if (!raAccount) {
     return next(new HttpErrors(403, 'SR Summary GET: Rainier Athletes account not found among authorization response accounts', { expose: false }));  
   }
-  // console.log('raAccount', JSON.stringify(raAccount, null, 2));
+  console.log('raAccount', JSON.stringify(raAccount, null, 2));
   // Get all of mentor's projects (GET /projects.json)
   // for each project id = N
   //     get all the people associated with the project  (GET /projects/N/people.json)
@@ -93,27 +96,22 @@ const findStudentMessageBoardUrl = async (request, next) => {
       if (people[p].email_address.toLowerCase().trim() === studentEmail.toLowerCase().trim()) {
         menteesProjects.push(projects[i]);
         menteeFound = true;
-        // console.log('mentee found');
+        console.log(studentEmail, 'found');
+        console.log(JSON.stringify(projects[i], null, 2));
         break;
       }
     }
     if (menteeFound) break;
   }
 
-  // console.log('found', menteesProjects.length, 'joint projects');
-  // if (menteesProjects.length > 1) {
-  //   console.log('More than 1 project with both mentor and mentee as members!');
-  //   console.log(JSON.stringify(menteesProjects, null, 2));
-  //   // for now...
-  //   return next(new HttpErrors(500, 'SR Summary GET: More than 1 project with both mentor and mentee as members!', { expose: false })); 
-  // }
   if (menteesProjects.length === 0) {
+    console.log('no projects found that include mentee', studentEmail);
     return undefined;
   }
   const messageBoard = menteesProjects[0].dock.find(d => d.name === 'message_board') || null;
   const messageBoardUrl = messageBoard && messageBoard.url;
   const messageBoardPostUrl = messageBoardUrl && messageBoardUrl.replace('.json', '/messages.json');
-  // console.log('messageBoardPostUrl', messageBoardPostUrl);
+  console.log('messageBoardPostUrl', messageBoardPostUrl);
   return messageBoardPostUrl;
 
   // return 'https://3.basecampapi.com/3595417/buckets/8778597/message_boards/1248902284/messages.json';
