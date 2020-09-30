@@ -83,7 +83,8 @@ const findStudentMessageBoardUrl = async (request, next) => {
   if (projects.length === 0) {
     return next(new HttpErrors(500, 'SR Summary GET: No projects found associated with the mentor', { expose: false }));  
   }
-  console.log(projects.length, 'projects found with purpose === topic');
+  console.log(projects.length, 'projects found with purpose === topic:');
+  projects.forEach(p => console.log(p.name));
   const menteesProjects = [];
   for (let i = 0; i < projects.length; i++) {
     // eslint-disable-next-line no-await-in-loop
@@ -94,6 +95,8 @@ const findStudentMessageBoardUrl = async (request, next) => {
       if (people[p].email_address.toLowerCase().trim() === studentEmail.toLowerCase().trim()) {
         menteesProjects.push(projects[i]);
         menteeFound = true;
+        console.log('people on mentees project:');
+        people.forEach(ppl => console.log(ppl.name, ppl.email_address));
         break;
       }
     }
