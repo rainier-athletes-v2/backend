@@ -35,7 +35,7 @@ const fetch = async (url, auth, next, errorMsg) => {
 
   try {
     res = await superagent.get(url)
-      .use(throttle.pluggin())
+      .use(throttle.plugin())
       .set('Authorization', `Bearer ${auth}`)
       .set('User-Agent', 'Rainier Athletes Mentor Portal (selpilot@gmail.com)')
       .set('Content-Type', 'application/json');
@@ -44,6 +44,17 @@ const fetch = async (url, auth, next, errorMsg) => {
   }
 
   return res;
+  // superagent.get(url)
+  //   .set('Authorization', `Bearer ${auth}`)
+  //   .set('User-Agent', 'Rainier Athletes Mentor Portal (selpilot@gmail.com)')
+  //   .set('Content-Type', 'application/json')
+  //   .use(throttle.plugin())
+  //   .end((err, data) => {
+  //     if (err) {
+  //       return next(new HttpErrors(err.status, errorMsg, { expose: false }));
+  //     }
+  //     return data;
+  //   });
 };
 
 const fetchAllProjects = async (url, auth, next) => {
