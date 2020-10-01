@@ -30,7 +30,14 @@ const fetch = async (url, auth, next, errorMsg) => {
       .set('User-Agent', 'Rainier Athletes Mentor Portal (selpilot@gmail.com)')
       .set('Content-Type', 'application/json');
   } catch (err) {
-    return next(new HttpErrors(err.status, errorMsg, { expose: false }));
+    if (err.status === 429) {
+      // exceeded rate limit!
+      const delay = err.get('Retry-After');
+      console.log('rate limit exceeded, delaying', delay, 'seconds');
+      setTimeout(() => fetch(url, auth, next, errorMsg), delay * 1000);
+    } else {
+      return next(new HttpErrors(err.status, errorMsg, { expose: false }));
+    }
   }
 
   return res;
@@ -40,22 +47,17 @@ const fetchAllProjects = async (url, auth, next) => {
   const allProjects = [];
   let projects;
   let projUrl = url;
-  let totalProjects = 0;
+
   do {
     // eslint-disable-next-line no-await-in-loop
     projects = await fetch(projUrl, auth, next, `SR Summary GET: Error fetching projects from ${projUrl}`);
-    if (!totalProjects) {
-      console.log(projects.get('X-Total-Count'), 'total projects to fetch');
-      totalProjects = projects.get('X-Total-Count');
-    }
-    console.log(projects.body.length, 'projects returned. Link:', projects.get('Link'));
+
     projects.body.forEach((p) => {
       if (p.purpose.toLowerCase().trim() === 'topic') { // mentee projects have purpose === topic
         allProjects.push(p);
       }
     });
     projUrl = parseLinkHeader(projects.get('Link')).next;
-    console.log('next page url:', projUrl);
   } while (projUrl);
 
   return allProjects;
@@ -64,13 +66,17 @@ const fetchAllProjects = async (url, auth, next) => {
 const fetchProjectPeople = async (project, auth, next) => {
   let peopleUrl = project.url.replace('.json', '/people.json');
   const allPeople = [];
-  let people;
+  let totalPeople = 0;
   do {
     // eslint-disable-next-line no-await-in-loop
-    people = await fetch(peopleUrl, auth, next, `SR Summary GET: Error fetching ${peopleUrl}`);
-
+    const people = await fetch(peopleUrl, auth, next, `SR Summary GET: Error fetching ${peopleUrl}`);
+    if (!totalPeople) {
+      totalPeople = people.get('X-Total-Count');
+      console.log(totalPeople, 'to be fetched for', project.name);
+    }
     people.body.forEach(p => allPeople.push(p));
     peopleUrl = parseLinkHeader(people.get('Link')).next;
+    console.log('next people url:', peopleUrl);
   } while (peopleUrl);
   return allPeople;
 };
