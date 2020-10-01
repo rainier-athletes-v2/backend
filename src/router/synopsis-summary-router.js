@@ -40,10 +40,14 @@ const fetchAllProjects = async (url, auth, next) => {
   const allProjects = [];
   let projects;
   let projUrl = url;
-
+  let totalProjects = 0;
   do {
     // eslint-disable-next-line no-await-in-loop
     projects = await fetch(projUrl, auth, next, `SR Summary GET: Error fetching projects from ${projUrl}`);
+    if (!totalProjects) {
+      console.log(projects.get('X-Total-Count'), 'total projects to fetch');
+      totalProjects = projects.get('X-Total-Count');
+    }
     console.log(projects.body.length, 'projects returned. Link:', projects.get('Link'));
     projects.body.forEach((p) => {
       if (p.purpose.toLowerCase().trim() === 'topic') { // mentee projects have purpose === topic
