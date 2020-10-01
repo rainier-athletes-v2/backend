@@ -4,6 +4,15 @@ import superagent from 'superagent';
 import jsonWebToken from 'jsonwebtoken';
 import bearerAuthMiddleware from '../lib/middleware/bearer-auth-middleware';
 
+const Throttle = require('superagent-throttle');
+
+const throttle = new Throttle({
+  active: true,
+  rate: 50,
+  ratePer: 10000,
+  concurrent: 1,
+});
+
 const synopsisSummaryRouter = new Router();
 
 const parseLinkHeader = (linkHeaders) => {
@@ -26,18 +35,12 @@ const fetch = async (url, auth, next, errorMsg) => {
 
   try {
     res = await superagent.get(url)
+      .use(throttle.pluggin())
       .set('Authorization', `Bearer ${auth}`)
       .set('User-Agent', 'Rainier Athletes Mentor Portal (selpilot@gmail.com)')
       .set('Content-Type', 'application/json');
   } catch (err) {
-    if (err.status === 429) {
-      // exceeded rate limit!
-      const delay = err.get('Retry-After');
-      console.log('rate limit exceeded, delaying', delay, 'seconds');
-      setTimeout(() => fetch(url, auth, next, errorMsg), delay * 1000);
-    } else {
-      return next(new HttpErrors(err.status, errorMsg, { expose: false }));
-    }
+    return next(new HttpErrors(err.status, errorMsg, { expose: false }));
   }
 
   return res;
