@@ -7,6 +7,7 @@ import bearerAuthMiddleware from '../lib/middleware/bearer-auth-middleware';
 const synopsisSummaryRouter = new Router();
 
 const parseLinkHeader = (linkHeaders) => {
+  // Link: <https://3.basecampapi.com/999999999/buckets/2085958496/messages.json?page=4>; rel="next"
   if (!linkHeaders) {
     return {};
   }
@@ -43,13 +44,14 @@ const fetchAllProjects = async (url, auth, next) => {
   do {
     // eslint-disable-next-line no-await-in-loop
     projects = await fetch(projUrl, auth, next, `SR Summary GET: Error fetching projects from ${projUrl}`);
-
+    console.log(projects.body.length, 'projects returned. Link:', projects.get('Link'));
     projects.body.forEach((p) => {
       if (p.purpose.toLowerCase().trim() === 'topic') { // mentee projects have purpose === topic
         allProjects.push(p);
       }
     });
     projUrl = parseLinkHeader(projects.get('Link')).url;
+    console.log('next page url:', projUrl);
   } while (projUrl);
 
   return allProjects;
@@ -94,7 +96,7 @@ const findStudentMessageBoardUrl = async (request, next) => {
 
   const projects = await fetchAllProjects(projectsUrl, accessToken, next);
   if (projects.length === 0) {
-    return next(new HttpErrors(500, 'SR Summary GET: No projects found associated with the mentor', { expose: false }));  
+    return next(new HttpErrors(404, 'SR Summary GET: No projects found associated with the mentor', { expose: false }));  
   }
   console.log(projects.length, 'projects found with purpose === topic:');
   projects.forEach(p => console.log(p.name));
