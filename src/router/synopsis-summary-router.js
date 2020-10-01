@@ -130,8 +130,11 @@ synopsisSummaryRouter.get('/api/v2/synopsissummary', bearerAuthMiddleware, async
   if (!request.query) {
     return next(new HttpErrors(403, 'SR Summary GET: Missing request query', { expose: false }));
   }
-  if (!request.query.basecampToken || !request.query.studentEmail) {
-    return next(new HttpErrors(403, 'SR Summary GET: Request missing required query parameters', { expose: false }));
+  if (!request.query.basecampToken) {
+    return next(new HttpErrors(403, 'SR Summary GET: Request missing required Basecamp auth token', { expose: false }));
+  }
+  if (!request.query.studentEmail) {
+    return next(new HttpErrors(403, 'SR Summary GET: Request missing required Student Email', { expose: false }));
   }
 
   const { basecampToken } = request.query;
@@ -140,7 +143,7 @@ synopsisSummaryRouter.get('/api/v2/synopsissummary', bearerAuthMiddleware, async
 
   const studentMessageBoardUrl = await findStudentMessageBoardUrl(request, next);
   if (!studentMessageBoardUrl) {
-    return next(new HttpErrors(500, 'SR Summary GET: No message board found under mentor with student', { expose: false }));
+    return next(new HttpErrors(500, 'SR Summary GET: No mentor Basecamp projects found that include student', { expose: false }));
   }
   return response.send({ messageBoardUrl: studentMessageBoardUrl }).status(200);
 });
