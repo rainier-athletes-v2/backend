@@ -6,7 +6,19 @@ import bearerAuthMiddleware from '../lib/middleware/bearer-auth-middleware';
 
 const synopsisSummaryRouter = new Router();
 
-const pageUrl = (url, page) => (`${url}?page=${page}`);
+const parseLinkHeader = (linkHeaders) => {
+  if (!linkHeaders) {
+    return {};
+  }
+  const parts = linkHeaders.split(',').reduce((acc, link) => {
+    const match = link.match(/<(.*)>; rel="(\w*)"/);
+    const url = match[1];
+    const rel = match[2];
+    acc[rel] = url;
+    return acc;
+  }, {});
+  return parts;
+};
 
 const fetch = async (url, auth, next, errorMsg) => {
   let res;
@@ -24,35 +36,36 @@ const fetch = async (url, auth, next, errorMsg) => {
 };
 
 const fetchAllProjects = async (url, auth, next) => {
-  let page = 1;
   const allProjects = [];
   let projects;
+  let projUrl = url;
+
   do {
     // eslint-disable-next-line no-await-in-loop
-    projects = await fetch(pageUrl(url, page), auth, next, `SR Summary GET: Error fetching page ${page} of projects`);
+    projects = await fetch(projUrl, auth, next, `SR Summary GET: Error fetching projects from ${projUrl}`);
 
     projects.body.forEach((p) => {
       if (p.purpose.toLowerCase().trim() === 'topic') { // mentee projects have purpose === topic
         allProjects.push(p);
       }
     });
-    page += 1;
-  } while (projects.get('Link'));
+    projUrl = parseLinkHeader(projects.get('Link')).url;
+  } while (projUrl);
+
   return allProjects;
 };
 
 const fetchProjectPeople = async (project, auth, next) => {
-  const peopleUrl = project.url.replace('.json', '/people.json');
+  let peopleUrl = project.url.replace('.json', '/people.json');
   const allPeople = [];
-  let page = 1;
   let people;
   do {
     // eslint-disable-next-line no-await-in-loop
-    people = await fetch(pageUrl(peopleUrl, page), auth, next, `SR Summary GET: Error fetching page ${page} of project people`);
+    people = await fetch(peopleUrl, auth, next, `SR Summary GET: Error fetching ${peopleUrl}`);
+
     people.body.forEach(p => allPeople.push(p));
-    page += 1;
-    // eslint-disable-next-line no-await-in-loop
-  } while (people.get('Link'));
+    peopleUrl = parseLinkHeader(people.get('Link')).url;
+  } while (peopleUrl);
   return allPeople;
 };
 
