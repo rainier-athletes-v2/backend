@@ -54,7 +54,7 @@ const fetchAllProjects = async (url, auth, next) => {
         allProjects.push(p);
       }
     });
-    projUrl = parseLinkHeader(projects.get('Link')).url;
+    projUrl = parseLinkHeader(projects.get('Link')).next;
     console.log('next page url:', projUrl);
   } while (projUrl);
 
@@ -70,7 +70,7 @@ const fetchProjectPeople = async (project, auth, next) => {
     people = await fetch(peopleUrl, auth, next, `SR Summary GET: Error fetching ${peopleUrl}`);
 
     people.body.forEach(p => allPeople.push(p));
-    peopleUrl = parseLinkHeader(people.get('Link')).url;
+    peopleUrl = parseLinkHeader(people.get('Link')).next;
   } while (peopleUrl);
   return allPeople;
 };
