@@ -73,6 +73,7 @@ export const thisSynopsisReport = reportId => (
     Mentor_Is_Substitute__c,
     Mentor__r.Name, 
     Mentor__r.Email,
+    Identity_Statement_Status__c,
     Weekly_Check_In_Status__c, 
     Weekly_Check_In_Missed_Reason__c,
     
