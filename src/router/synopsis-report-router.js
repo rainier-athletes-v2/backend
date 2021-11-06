@@ -68,6 +68,7 @@ synopsisReportRouter.get('/api/v2/synopsisreport/:reportId', bearerAuthMiddlewar
     srQueryResults = await superagent.get(`${queryUrl}${srQuery}`)
       .set('Authorization', `Bearer ${accessToken}`);
   } catch (err) {
+    console.log(err);
     return next(new HttpErrors(err.status, `Error retrieving Synopsis Report ${request.params.reportId}`, { expose: false }));
   }
 
