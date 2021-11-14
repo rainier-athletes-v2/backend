@@ -72,7 +72,6 @@ export const thisSynopsisReport = reportId => (
     Mentor__r.Name, 
     Mentor__r.Email,
 
-    Identity_Statement_Status__c,
     Weekly_Check_In_Status__c,
     Weekly_Check_In_Missed_Reason__c,
     Check_in_status_met__c,
@@ -102,6 +101,7 @@ export const thisSynopsisReport = reportId => (
     Point_Sheet_and_School_Update__c,
     
     Sports_Update__c,
+    Weekly_Sports_Update__c,
     Additional_Comments__c,
 
     Mentor_Support_Request__c,

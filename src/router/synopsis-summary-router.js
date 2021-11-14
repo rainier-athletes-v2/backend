@@ -105,7 +105,6 @@ const findStudentMessageBoardUrl = async (request, next) => {
   if (!raAccount) {
     return next(new HttpErrors(403, 'SR Summary GET: Rainier Athletes account not found among authorization response accounts', { expose: false }));  
   }
-  console.log('raAccount', JSON.stringify(raAccount, null, 2));
   // Get all of mentor's projects (GET /projects.json)
   // for each project id = N
   //     get all the people associated with the project  (GET /projects/N/people.json)
@@ -122,20 +121,17 @@ const findStudentMessageBoardUrl = async (request, next) => {
   if (projects.length === 0) {
     return next(new HttpErrors(404, 'SR Summary GET: No projects found associated with the mentor', { expose: false }));  
   }
-  console.log(projects.length, 'projects found with purpose === topic:');
-  projects.forEach(p => console.log(p.name));
+
   const menteesProjects = [];
   for (let i = 0; i < projects.length; i++) {
     // eslint-disable-next-line no-await-in-loop
     const people = await fetchProjectPeople(projects[i], accessToken, next);
     let menteeFound = false;
-    console.log(people.length, 'people found for project', projects[i].name);
+
     for (let p = 0; p < people.length; p++) {
       if (people[p].email_address.toLowerCase().trim() === studentEmail.toLowerCase().trim()) {
         menteesProjects.push(projects[i]);
         menteeFound = true;
-        console.log('people on mentees project:');
-        people.forEach(ppl => console.log(ppl.name, ppl.email_address));
         break;
       }
     }
@@ -143,14 +139,13 @@ const findStudentMessageBoardUrl = async (request, next) => {
   }
 
   if (menteesProjects.length === 0) {
-    console.log('no projects found that include mentee', studentEmail);
     return undefined;
   }
-  console.log(studentEmail, ' project found:', menteesProjects[0].name);
+
   const messageBoard = menteesProjects[0].dock.find(d => d.name === 'message_board') || null;
   const messageBoardUrl = messageBoard && messageBoard.url;
   const messageBoardPostUrl = messageBoardUrl && messageBoardUrl.replace('.json', '/messages.json');
-  console.log('messageBoardPostUrl', messageBoardPostUrl);
+
   return messageBoardPostUrl;
 
   // return 'https://3.basecampapi.com/3595417/buckets/8778597/message_boards/1248902284/messages.json';
