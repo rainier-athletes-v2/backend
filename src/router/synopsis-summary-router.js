@@ -44,17 +44,6 @@ const fetch = async (url, auth, next, errorMsg) => {
   }
 
   return res;
-  // superagent.get(url)
-  //   .set('Authorization', `Bearer ${auth}`)
-  //   .set('User-Agent', 'Rainier Athletes Mentor Portal (selpilot@gmail.com)')
-  //   .set('Content-Type', 'application/json')
-  //   .use(throttle.plugin())
-  //   .end((err, data) => {
-  //     if (err) {
-  //       return next(new HttpErrors(err.status, errorMsg, { expose: false }));
-  //     }
-  //     return data;
-  //   });
 };
 
 const fetchAllProjects = async (url, auth, next) => {
@@ -86,11 +75,9 @@ const fetchProjectPeople = async (project, auth, next) => {
     const people = await fetch(peopleUrl, auth, next, `SR Summary GET: Error fetching ${peopleUrl}`);
     if (!totalPeople) {
       totalPeople = people.get('X-Total-Count');
-      console.log(totalPeople, 'to be fetched for', project.name);
     }
     people.body.forEach(p => allPeople.push(p));
     peopleUrl = parseLinkHeader(people.get('Link')).next;
-    console.log('next people url:', peopleUrl);
   } while (peopleUrl);
   return allPeople;
 };
