@@ -99,6 +99,7 @@ export const thisSynopsisReport = reportId => (
     No_Point_Sheet__c,
     No_Point_Sheet_What_Happened__c,
     Point_Sheet_and_School_Update__c,
+    Missing_Point_Sheet_Image__c,
     
     Sports_Update__c,
     Weekly_Sports_Update__c,
