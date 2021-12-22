@@ -86,8 +86,9 @@ const fetchProjectPeople = async (project, auth, next) => {
     const people = await fetch(peopleUrl, auth, next, `SR Summary GET: Error fetching ${peopleUrl}`);
     if (!totalPeople) {
       totalPeople = people.get('X-Total-Count');
-      console.log(totalPeople, 'to be fetched for', project.name);
+      console.log(totalPeople, 'people to be fetched for', project.name);
     }
+    console.log(`${people.body.length} people retrieved from ${peopleUrl}`);
     people.body.forEach(p => allPeople.push(p));
     peopleUrl = parseLinkHeader(people.get('Link')).next;
     console.log('next people url:', peopleUrl);
@@ -129,13 +130,12 @@ const findStudentMessageBoardUrl = async (request, next) => {
     // eslint-disable-next-line no-await-in-loop
     const people = await fetchProjectPeople(projects[i], accessToken, next);
     let menteeFound = false;
-    console.log(people.length, 'people found for project', projects[i].name);
+    console.log(`examining ${people.length} people in project ${projects[i].name}`);
     for (let p = 0; p < people.length; p++) {
+      console.log(`${p + 1}: comparing "${people[p].email_address.toLowerCase().trim()}" to "${studentEmail.toLowerCase().trim()}"`)
       if (people[p].email_address.toLowerCase().trim() === studentEmail.toLowerCase().trim()) {
         menteesProjects.push(projects[i]);
         menteeFound = true;
-        console.log('people on mentees project:');
-        people.forEach(ppl => console.log(ppl.name, ppl.email_address));
         break;
       }
     }
@@ -182,7 +182,7 @@ synopsisSummaryRouter.get('/api/v2/synopsissummary', bearerAuthMiddleware, async
 
   const studentMessageBoardUrl = await findStudentMessageBoardUrl(request, next);
   if (!studentMessageBoardUrl) {
-    return next(new HttpErrors(500, 'SR Summary GET: No mentor Basecamp projects found that include student', { expose: false }));
+    return next(new HttpErrors(404, `SR Summary GET: No mentor Basecamp projects found that include student ${request.query.studentEmail}`, { expose: false }));
   }
   return response.send({ messageBoardUrl: studentMessageBoardUrl }).status(200);
 });
