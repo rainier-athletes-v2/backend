@@ -38,6 +38,7 @@ profileRouter.get('/api/v2/profiles/myStudents', bearerAuthMiddleware, async (re
       relatedContacts = await superagent.get(`${queryUrl}${myStudentsQuery}`)
         .set('Authorization', `Bearer ${accessToken}`);
     } catch (err) {
+      console.log(err);
       return next(new HttpErrors(err.status, `Error retrieving myStudents for contact ${request.profile.contactId}`, { expose: false }));
     }
 
@@ -62,7 +63,7 @@ profileRouter.get('/api/v2/profiles/myStudents', bearerAuthMiddleware, async (re
         lastName: ref.LastName,
         name: ref.Name,
         role: 'student', // or could be npe4__Type__c.toLowerCase() but not sure that'll always be student
-        primaryEmail: ref.Email,
+        primaryEmail: ref.Rainier_Athletes_Email__c,
         phone: ref.HomePhone,
         cellPhone: ref.MobilePhone,
         studentData: {
