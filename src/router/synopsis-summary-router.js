@@ -108,7 +108,7 @@ const findStudentMessageBoardUrl = async (request, next) => {
   if (projects.length === 0) {
     return next(new HttpErrors(404, 'SR Summary GET: No projects found associated with the mentor', { expose: false }));  
   }
-  console.log(`${projects.lengt} projects found.`);
+  console.log(`${projects.length} projects found.`);
   const menteesProjects = [];
   for (let i = 0; i < projects.length; i++) {
     // eslint-disable-next-line no-await-in-loop
