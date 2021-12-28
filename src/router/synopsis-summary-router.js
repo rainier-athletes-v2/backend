@@ -2,6 +2,7 @@ import { Router } from 'express';
 import HttpErrors from 'http-errors';
 import superagent from 'superagent';
 import jsonWebToken from 'jsonwebtoken';
+import timeout from 'connect-timeout';
 import bearerAuthMiddleware from '../lib/middleware/bearer-auth-middleware';
 
 const Throttle = require('superagent-throttle');
@@ -70,9 +71,14 @@ const fetchProjectPeople = async (project, auth, next) => {
   let peopleUrl = project.url.replace('.json', '/people.json');
   const allPeople = [];
   let totalPeople = 0;
-  do {
-    // eslint-disable-next-line no-await-in-loop
-    const people = await fetch(peopleUrl, auth, next, `SR Summary GET: Error fetching ${peopleUrl}`);
+  let people;
+  do { 
+    try {
+      // eslint-disable-next-line no-await-in-loop
+      people = await fetch(peopleUrl, auth, next, `SR Summary GET: Error fetching ${peopleUrl}`);
+    } catch (err) {
+      return next(new HttpErrors(err.status, `Error fetching people at url ${peopleUrl}`));
+    }
     if (!totalPeople) {
       totalPeople = people.get('X-Total-Count');
     }
@@ -108,13 +114,12 @@ const findStudentMessageBoardUrl = async (request, next) => {
   if (projects.length === 0) {
     return next(new HttpErrors(404, 'SR Summary GET: No projects found associated with the mentor', { expose: false }));  
   }
-  console.log(`${projects.length} projects found.`);
+  console.log(`>>>> ${projects.length} projects found to search for ${studentEmail}. <<<<`);
   const menteesProjects = [];
   for (let i = 0; i < projects.length; i++) {
     // eslint-disable-next-line no-await-in-loop
     const people = await fetchProjectPeople(projects[i], accessToken, next);
     let menteeFound = false;
-    console.log(`${people.length} for for project #${i + 1}`);
     for (let p = 0; p < people.length; p++) {
       if (people[p].email_address.toLowerCase().trim() === studentEmail.toLowerCase().trim()) {
         menteesProjects.push(projects[i]);
@@ -124,6 +129,9 @@ const findStudentMessageBoardUrl = async (request, next) => {
       }
     }
     if (menteeFound) break;
+    if (request.timedout) {
+      return next(new HttpErrors(503, `Request timed out searching ${projects.length} basecamp projects.`, { expose: false}));
+    }
   }
 
   if (menteesProjects.length === 0) {
@@ -145,7 +153,7 @@ const prepContentForBasecamp = (html) => {
 };
 
 // return message board URL for a given student/mentor pair
-synopsisSummaryRouter.get('/api/v2/synopsissummary', bearerAuthMiddleware, async (request, response, next) => {
+synopsisSummaryRouter.get('/api/v2/synopsissummary', timeout(25000), bearerAuthMiddleware, async (request, response, next) => {
   // request.query = {
   //   basecampToken, studentEmail
   // }
