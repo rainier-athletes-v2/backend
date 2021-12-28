@@ -108,17 +108,18 @@ const findStudentMessageBoardUrl = async (request, next) => {
   if (projects.length === 0) {
     return next(new HttpErrors(404, 'SR Summary GET: No projects found associated with the mentor', { expose: false }));  
   }
-
+  console.log(`${projects.lengt} projects found.`);
   const menteesProjects = [];
   for (let i = 0; i < projects.length; i++) {
     // eslint-disable-next-line no-await-in-loop
     const people = await fetchProjectPeople(projects[i], accessToken, next);
     let menteeFound = false;
-
+    console.log(`${people.length} for for project #${i + 1}`);
     for (let p = 0; p < people.length; p++) {
       if (people[p].email_address.toLowerCase().trim() === studentEmail.toLowerCase().trim()) {
         menteesProjects.push(projects[i]);
         menteeFound = true;
+        console.log(`mentee found in project ${i + 1}, person ${p + 1}`);
         break;
       }
     }
