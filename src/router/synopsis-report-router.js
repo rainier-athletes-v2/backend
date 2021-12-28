@@ -6,6 +6,28 @@ import * as soql from '../lib/sf-soql-queries';
 
 const synopsisReportRouter = new Router();
 
+synopsisReportRouter.get('/api/v2/synopsisreports/pick-lists', bearerAuthMiddleware, async (request, response, next) => {
+  if (!['mentor', 'admin'].includes(request.profile.role)) {
+    return next(new HttpErrors(403, 'SynopsisReport GET: User not authorized.'));
+  }
+
+  const { 
+    accessToken, 
+    restUrl, 
+  } = request.profile;
+
+  const pickListRequest = `ui-api/object-info/SynopsisReport__c/picklist-values/${process.env.SR_RECORD_TYPE_ID}`; 
+  let pickListResults;
+  try {
+    pickListResults = await superagent.get(`${restUrl}${pickListRequest}`)
+      .set('Authorization', `Bearer ${accessToken}`);
+  } catch (err) {
+    return next(new HttpErrors(err.status, 'Error retrieving SR picklists', { expose: false }));
+  }
+
+  return response.json(pickListResults.body).status(200);  
+});
+
 synopsisReportRouter.get('/api/v2/synopsisreports/:studentId', bearerAuthMiddleware, async (request, response, next) => {
   if (!['mentor', 'admin'].includes(request.profile.role)) {
     return next(new HttpErrors(403, 'SynopsisReport GET: User not authorized.'));

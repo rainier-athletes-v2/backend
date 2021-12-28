@@ -22,6 +22,7 @@ const retrieveMentorInfo = async (sfResponse, next) => {
   }
   const ptUpdateUrl = `${sfResponse.body.instance_url}/services/data/v${process.env.SF_API_VERSION}/composite/sobjects`;
   const sobjectsUrl = idResponse.body.urls.sobjects.replace('{version}', process.env.SF_API_VERSION);
+  const restUrl = idResponse.body.urls.rest.replace('{version}', process.env.SF_API_VERSION);
   const queryUrl = idResponse.body.urls.query.replace('{version}', process.env.SF_API_VERSION).slice(0, -1); // remove trailing '/'
   const userId = idResponse.body.user_id;
   const userUrl = `${sobjectsUrl}User/${userId}`;
@@ -64,6 +65,7 @@ const retrieveMentorInfo = async (sfResponse, next) => {
     accessToken,
     refreshToken,
     sobjectsUrl,
+    restUrl,
     queryUrl,
     ptUpdateUrl,
     role: userRole,
