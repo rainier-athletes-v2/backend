@@ -60,6 +60,7 @@ const startServer = () => {
   server = app.listen(PORT, () => {
     console.log(`Server up on port ${PORT}`);
   });
+  server.setTimeout = 60000;
 };
 
 const stopServer = () => {
