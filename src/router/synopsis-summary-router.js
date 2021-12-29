@@ -173,7 +173,7 @@ synopsisSummaryRouter.get('/api/v2/synopsissummary', timeout(25000), bearerAuthM
 
   const studentMessageBoardUrl = await findStudentMessageBoardUrl(request, next);
   if (!studentMessageBoardUrl) {
-    return next(new HttpErrors(500, 'SR Summary GET: No mentor Basecamp projects found that include student', { expose: false }));
+    return next(new HttpErrors(404, 'SR Summary GET: No mentor Basecamp projects found that include student', { expose: false }));
   }
   return response.send({ messageBoardUrl: studentMessageBoardUrl }).status(200);
 });
