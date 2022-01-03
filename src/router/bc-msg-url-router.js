@@ -73,6 +73,7 @@ const fetchProjectPeople = async (project, auth, next) => {
   let totalPeople = 0;
   let people;
   do { 
+    console.log('...... peopleUrl', peopleUrl);
     try {
       // eslint-disable-next-line no-await-in-loop
       people = await fetch(peopleUrl, auth, next, `SR Summary GET: Error fetching ${peopleUrl}`);
@@ -210,28 +211,29 @@ bcUrlRouter.get('/api/v2/bc-project-scan', timeout(25000), bearerAuthMiddleware,
   const { accessToken } = jsonWebToken.verify(basecampToken, process.env.SECRET);
 
   const people = await fetchProjectPeople(project, accessToken, next);
-
+  console.log('.....people found:', people.length);
   let menteeFound = false;
   for (let p = 0; p < people.length; p++) {
     if (people[p].email_address.toLowerCase().trim() === studentEmail.toLowerCase().trim()) {
       // menteesProjects.push(projects[i]);
       menteeFound = true;
-      console.log(`mentee found in project <name?>, person ${p + 1}`);
+      console.log(`mentee found in project ${project.name}, person ${p + 1}`);
       break;
     }
     if (request.timedout) {
-      return next(new HttpErrors(503, 'Request timed out searching project people.', { expose: false}));
+      return next(new HttpErrors(503, `Request timed out searching project people of project ${project.name}.`, { expose: false }));
     }
   }
   
   if (menteeFound) {
-    const messageBoard = project.dock.find(d => d.name === 'message_board') || null;
+    console.log(project);
+    const messageBoard = project.dock.url.find(d => d.includes('message_board')) || null;
     const messageBoardUrl = messageBoard && messageBoard.url;
     const messageBoardPostUrl = messageBoardUrl && messageBoardUrl.replace('.json', '/messages.json');
 
-    return response.send({ messageBoardUrl: messageBoardPostUrl }).status(200);
+    return response.send(messageBoardPostUrl).status(200);
   }
-  return response.send({ messageBoardUrl: '' }).status(200);
+  return response.send(null).status(200);
 });
 
 // return message board URL for a given student/mentor pair
