@@ -124,7 +124,7 @@ bcUrlRouter.get('/api/v2/bc-projects', timeout(25000), bearerAuthMiddleware, asy
   const reducedProjects = rawProjects.map(p => ({
     name: p.name,
     url: p.url,
-    dock: p.dock.find(d => d.name === 'message_board'),
+    msgUrl: p.dock.find(d => d.name === 'message_board').url || null,
   }));
   return response.send({ projects: reducedProjects }).status(200);
 });
@@ -168,7 +168,7 @@ bcUrlRouter.get('/api/v2/bc-project-scan', timeout(25000), bearerAuthMiddleware,
   if (!menteeFound) {
     return response.send({ messageBoardUrl: null }).status(200);
   }
-  const messageBoardUrl = project.dock.url;
+  const messageBoardUrl = project.msgUrl;
   // const messageBoardUrl = messageBoard && messageBoard.url;
   const messageBoardPostUrl = messageBoardUrl && messageBoardUrl.replace('.json', '/messages.json');
 
