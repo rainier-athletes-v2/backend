@@ -120,9 +120,13 @@ bcUrlRouter.get('/api/v2/bc-projects', timeout(25000), bearerAuthMiddleware, asy
 
   const projectsUrl = `${raAccount.href}/projects.json`;
 
-  const projects = await fetchAllProjects(projectsUrl, request.accessToken, next);
-  
-  return response.send({ projects }).status(200);
+  const rawProjects = await fetchAllProjects(projectsUrl, request.accessToken, next);
+  const reducedProjects = rawProjects.map(p => ({
+    name: p.name,
+    url: p.url,
+    dock: p.dock.find(d => d.name === 'message_board'),
+  }));
+  return response.send({ projects: reducedProjects }).status(200);
 });
 
 // fetch people associated with project for student email
@@ -164,8 +168,8 @@ bcUrlRouter.get('/api/v2/bc-project-scan', timeout(25000), bearerAuthMiddleware,
   if (!menteeFound) {
     return response.send({ messageBoardUrl: null }).status(200);
   }
-  const messageBoard = project.dock.find(d => d.name === 'message_board') || null;
-  const messageBoardUrl = messageBoard && messageBoard.url;
+  const messageBoardUrl = project.dock.url;
+  // const messageBoardUrl = messageBoard && messageBoard.url;
   const messageBoardPostUrl = messageBoardUrl && messageBoardUrl.replace('.json', '/messages.json');
 
   return response.send({ messageBoardUrl: messageBoardPostUrl }).status(200);
