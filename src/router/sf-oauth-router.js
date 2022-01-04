@@ -119,7 +119,6 @@ sfOAuthRouter.post('/api/v2/oauth/sf', async (request, response, next) => {
         client_id: process.env.SF_OAUTH_ID,
       });
   } catch (err) {
-    console.log('SF: Use of refresh token failed');
     return next(new HttpErrors(err.status, 'SF: Error using refresh token', { expose: false }));
   }
   
