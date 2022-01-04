@@ -38,7 +38,7 @@ profileRouter.get('/api/v2/profiles/myStudents', bearerAuthMiddleware, async (re
       relatedContacts = await superagent.get(`${queryUrl}${myStudentsQuery}`)
         .set('Authorization', `Bearer ${accessToken}`);
     } catch (err) {
-      return next(new HttpErrors(err.status, `Error retrieving myStudents for contact ${request.profile.contactId}`, { expose: false }));
+      return next(new HttpErrors(err.status, `Error retrieving myStudents for contact ${request.profile.contactId}.`, { expose: false }));
     }
 
     // filter down to unique students
@@ -65,6 +65,7 @@ profileRouter.get('/api/v2/profiles/myStudents', bearerAuthMiddleware, async (re
         primaryEmail: ref.Email,
         phone: ref.HomePhone,
         cellPhone: ref.MobilePhone,
+        email: ref.Rainier_Athletes_Email__c,
         studentData: {
           gender: ref.Gender__c,
           dateOfBirth: ref.Birthdate,

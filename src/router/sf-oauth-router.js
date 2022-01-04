@@ -58,8 +58,6 @@ const retrieveMentorInfo = async (sfResponse, next) => {
   } else if (contactResponse.body.Mentor__c) {
     userRole = 'mentor';
   }
-
-  console.log('QUERY URL', queryUrl);
   
   const raTokenPayload = {
     accessToken,
