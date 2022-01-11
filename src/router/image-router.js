@@ -22,6 +22,7 @@ imageRouter.post('/api/v2/image/upload', bearerAuthMiddleware, multerUpload.sing
   const { file, body, profile } = request;
   
   let bcResponse;
+  console.log('###### Image attachment file.size:', file.size);
   try { 
     bcResponse = await fetch(`https://3.basecampapi.com/3595417/attachments.json?name=${body.name}`, {
       method: 'post',
