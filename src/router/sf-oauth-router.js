@@ -122,7 +122,7 @@ sfOAuthRouter.post('/api/v2/oauth/sf', async (request, response, next) => {
     return next(new HttpErrors(err.status, 'SF: Error using refresh token', { expose: false }));
   }
   
-  dumpAccessToken(JSON.stringify(refreshResponse.body.access_token, null, 2));
+  // dumpAccessToken(JSON.stringify(refreshResponse.body.access_token, null, 2));
   
   const tokenPayload = await retrieveMentorInfo(refreshResponse, next);
 
@@ -156,7 +156,7 @@ sfOAuthRouter.get('/api/v2/oauth/sf', async (request, response, next) => {
     return response.redirect(process.env.CLIENT_URL);
   }
 
-  dumpAccessToken(JSON.stringify(sfTokenResponse.body.access_token, null, 2));
+  // dumpAccessToken(JSON.stringify(sfTokenResponse.body.access_token, null, 2));
   
   const raTokenPayload = await retrieveMentorInfo(sfTokenResponse, next);
 

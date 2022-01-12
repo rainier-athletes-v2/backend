@@ -115,6 +115,7 @@ bcUrlRouter.get('/api/v2/bc-projects', timeout(25000), bearerAuthMiddleware, asy
 
   const { basecampToken } = request.query;
   request.accessToken = jsonWebToken.verify(basecampToken, process.env.SECRET).accessToken;
+  request.mentorEmail = jsonWebToken.verify(basecampToken, process.env.SECRET).mentorEmail;
 
   const raAccount = await fetchRaAccount(request, next);
 
@@ -126,6 +127,7 @@ bcUrlRouter.get('/api/v2/bc-projects', timeout(25000), bearerAuthMiddleware, asy
     url: p.url,
     msgUrl: p.dock.find(d => d.name === 'message_board').url.replace('.json', '/messages.json') || null,
   }));
+  console.log(`>>>>>>>>>>> returning ${reducedProjects.length} projects for mentor ${request.mentorEmail}`);
   return response.send({ projects: reducedProjects }).status(200);
 });
 
