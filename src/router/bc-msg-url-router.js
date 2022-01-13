@@ -3,6 +3,7 @@ import HttpErrors from 'http-errors';
 import superagent from 'superagent';
 import jsonWebToken from 'jsonwebtoken';
 import timeout from 'connect-timeout';
+import logger from '../lib/logger';
 import bearerAuthMiddleware from '../lib/middleware/bearer-auth-middleware';
 
 const Throttle = require('superagent-throttle');
@@ -118,16 +119,17 @@ bcUrlRouter.get('/api/v2/bc-projects', timeout(25000), bearerAuthMiddleware, asy
   request.mentorEmail = jsonWebToken.verify(basecampToken, process.env.SECRET).mentorEmail;
 
   const raAccount = await fetchRaAccount(request, next);
-
   const projectsUrl = `${raAccount.href}/projects.json`;
-
+  
   const rawProjects = await fetchAllProjects(projectsUrl, request.accessToken, next);
   const reducedProjects = rawProjects.map(p => ({
     name: p.name,
     url: p.url,
     msgUrl: p.dock.find(d => d.name === 'message_board').url.replace('.json', '/messages.json') || null,
   }));
-  console.log(`>>>>>>>>>>> returning ${reducedProjects.length} projects for mentor ${request.mentorEmail}`);
+
+  logger.log(logger.INFO, `Returning ${reducedProjects.length} projects for mentor ${request.mentorEmail}`);
+  
   return response.send({ projects: reducedProjects }).status(200);
 });
 
