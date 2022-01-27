@@ -120,14 +120,22 @@ bcUrlRouter.get('/api/v2/bc-projects', timeout(25000), bearerAuthMiddleware, asy
 
   const raAccount = await fetchRaAccount(request, next);
   const projectsUrl = `${raAccount.href}/projects.json`;
-  
+  if (request.mentorEmail.toLowerCase().trim() === 'elliot@rainierathletes.org') {
+    console.log('>>>>>>> elliot diagnostics <<<<<<<<<<');
+    console.log('>>>>>>> raAccount:', raAccount);
+    console.log('>>>>>>> projectsUrl:', projectsUrl);
+    console.log('>>>>>>> accessToken"', request.accessToken);
+  }
   const rawProjects = await fetchAllProjects(projectsUrl, request.accessToken, next);
   const reducedProjects = rawProjects.map(p => ({
     name: p.name,
     url: p.url,
     msgUrl: p.dock.find(d => d.name === 'message_board').url.replace('.json', '/messages.json') || null,
   }));
-
+  if (request.mentorEmail.toLowerCase().trim() === 'elliot@rainierathletes.org') {
+    console.log('>>>>>>> rawProjects:', rawProjects);
+    console.log('>>>>>>> reducedProjects:', reducedProjects);
+  }
   logger.log(logger.INFO, `Returning ${reducedProjects.length} projects for mentor ${request.mentorEmail}`);
   
   return response.send({ projects: reducedProjects }).status(200);
