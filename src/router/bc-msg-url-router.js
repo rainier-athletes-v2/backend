@@ -102,6 +102,8 @@ const fetchRaAccount = async (request, next) => {
   return raAccount;
 };
 
+const logMentorEmail = 'selpilot@gmail.com';
+
 // return all mentor basecamp projects
 bcUrlRouter.get('/api/v2/bc-projects', timeout(25000), bearerAuthMiddleware, async (request, response, next) => {
   // request.query = {
@@ -120,8 +122,8 @@ bcUrlRouter.get('/api/v2/bc-projects', timeout(25000), bearerAuthMiddleware, asy
 
   const raAccount = await fetchRaAccount(request, next);
   const projectsUrl = `${raAccount.href}/projects.json`;
-  if (request.mentorEmail.toLowerCase().trim() === 'elliot@rainierathletes.org') {
-    console.log('>>>>>>> elliot diagnostics <<<<<<<<<<');
+  if (request.mentorEmail.toLowerCase().trim() === logMentorEmail) {
+    console.log(`>>>>>>> ${logMentorEmail} diagnostics <<<<<<<<<<`);
     console.log('>>>>>>> raAccount:', raAccount);
     console.log('>>>>>>> projectsUrl:', projectsUrl);
     console.log('>>>>>>> accessToken"', request.accessToken);
@@ -132,9 +134,9 @@ bcUrlRouter.get('/api/v2/bc-projects', timeout(25000), bearerAuthMiddleware, asy
     url: p.url,
     msgUrl: p.dock.find(d => d.name === 'message_board').url.replace('.json', '/messages.json') || null,
   }));
-  if (request.mentorEmail.toLowerCase().trim() === 'elliot@rainierathletes.org') {
+  if (request.mentorEmail.toLowerCase().trim() === logMentorEmail) {
     console.log('>>>>>>> rawProjects:', rawProjects);
-    console.log('>>>>>>> reducedProjects:', reducedProjects);
+    console.log('>>>>>>> returning reducedProjects:', reducedProjects);
   }
   logger.log(logger.INFO, `Returning ${reducedProjects.length} projects for mentor ${request.mentorEmail}`);
   
