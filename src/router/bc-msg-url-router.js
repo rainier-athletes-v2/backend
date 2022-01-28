@@ -102,7 +102,7 @@ const fetchRaAccount = async (request, next) => {
   return raAccount;
 };
 
-const logMentorEmail = 'selpilot@gmail.com';
+const logMentorEmail = 'elliot@rainierathletes.org';
 
 // return all mentor basecamp projects
 bcUrlRouter.get('/api/v2/bc-projects', timeout(25000), bearerAuthMiddleware, async (request, response, next) => {
