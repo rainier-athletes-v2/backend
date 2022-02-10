@@ -74,7 +74,6 @@ const retrieveMentorInfo = async (sfResponse, next) => {
     firstName: idResponse.body.first_name,
     lastName: idResponse.body.last_name,
   };
-
   return raTokenPayload;
 };
 

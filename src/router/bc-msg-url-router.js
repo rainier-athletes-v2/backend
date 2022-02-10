@@ -122,7 +122,7 @@ bcUrlRouter.get('/api/v2/bc-projects', timeout(25000), bearerAuthMiddleware, asy
 
   const raAccount = await fetchRaAccount(request, next);
   const projectsUrl = `${raAccount.href}/projects.json`;
-  if (request.mentorEmail.toLowerCase().trim() === logMentorEmail) {
+  if (request.mentorEmail === logMentorEmail) {
     console.log(`>>>>>>> ${logMentorEmail} diagnostics <<<<<<<<<<`);
     console.log('>>>>>>> raAccount:', raAccount);
     console.log('>>>>>>> projectsUrl:', projectsUrl);

@@ -23,7 +23,7 @@ const retrieveBasecampInfo = async (bcResponse, next) => {
   } catch (err) {
     return next(new HttpErrors(err.status, `BC: Error retrieving info from ${authorizationsUrl}`, { expose: false }));
   }
-  const mentorEmail = authResponse.body.identity.email_address;
+  const mentorEmail = authResponse.body.identity.email_address.toLowerCase().trim();
   const raAccount = authResponse.body.accounts.find(a => a.name.trim() === 'Rainier Athletes') || {};
   const raTokenPayload = {
     accessToken,
