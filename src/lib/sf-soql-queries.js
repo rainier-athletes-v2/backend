@@ -49,11 +49,9 @@ export const recentSynopsisReports = studentId => (
   `SELECT 
     Id,
     Name,
-    Point_Sheet_Status__c,
     Synopsis_Report_Status__c,
     Start_Date__c,
-    Week__c,
-    (SELECT Id FROM PointTrackers__r)
+    Week__c
   FROM SynopsisReport__c 
   WHERE Student__c = '${studentId}' 
   ORDER BY Start_Date__c DESC LIMIT 1`
@@ -74,81 +72,42 @@ export const thisSynopsisReport = reportId => (
     Mentor__r.Name, 
     Mentor__r.Rainier_Athletes_Email__c,
 
-    Identity_Statement_Status__c,
-    Weekly_Check_In_Status__c, 
+    Weekly_Check_In_Status__c,
     Weekly_Check_In_Missed_Reason__c,
-    
-    Student_Touch_Points__c,
-    Student_Touch_Points_Other__c,
-    Family_Touch_Points__c,
-    Family_Touch_Points_Other__c,
-    Teacher_Touch_Points__c,
-    Teacher_Touch_Points_Other__c,
-    Coach_Touch_Points__c,
-    Coach_Touch_Points_Other__c,
-    
-    Wednesday_Check_In__c,
-    Mentor_Meal__c,
-    Sports_Game__c,
-    Community_Event__c,
-    IEP_Summer_Review_Meeting__c,
-    Other_Meetup__c,
-    One_Team_Notes__c,
-    
+    Check_in_status_met__c,
+    Communication_Status_Met__c,
+    Did_not_meet_communication__c,
+    Communication_Method_No_Check_In__c,
+    How_can_we_support_communication__c,
+    How_can_we_support_comm_required__c,
+    Communication_Method_No_Response__c,
+    How_can_we_support__c,
+    How_can_we_support_required__c,
+    Family_Connection__c,
+    Teacher_Connection__c,
+    Coach_Connection__c,
+    Identity_Statement_Weekly_Status__c,
+    Identity_Statement_Prompts__c,
+    Identity_Statement_Why_Not__c,
+    Identity_Statement_Highlights__c,
+
     Point_Sheet_Status__c,
-    Point_Sheet_Status_Reason__c,
-    Point_Sheet_Status_Notes__c,
+    Point_Sheet_MS_Self_Reflection__c,
+    Point_Sheet_ES_Self_Reflection__c,
+    Point_Sheet_Teacher_Convo_MS__c,
+    Point_Sheet_Teacher_Convo_ES__c,
+    No_Point_Sheet__c,
+    No_Point_Sheet_What_Happened__c,
+    Point_Sheet_and_School_Update__c,
+    Missing_Point_Sheet_Image__c,
     
-    Earned_Playing_Time__c,
-    Mentor_Granted_Playing_Time__c,
-    
-    Mentor_Granted_Playing_Time_Explanation__c,
-    Student_Action_Items__c,
     Sports_Update__c,
+    Weekly_Sports_Update__c,
     Additional_Comments__c,
 
     Mentor_Support_Request__c,
-    Mentor_Support_Request_Notes__c,
-    
-    Summer_attend_next_camp__c,
-    Summer_attended_last_camp__c,
-    Summer_attended_last_camp_notes__c,
-    Summer_family_connection_made__c,
-    Summer_family_conn_phone__c,
-    Summer_family_conn_camp__c,
-    Summer_family_conn_meal__c,
-    Summer_family_conn_ymca__c,
-    Summer_family_conn_digital__c,
-    Summer_family_conn_other__c,
-    Summer_family_connection_other_notes__c,
-    Summer_next_camp_notes__c,
-    Summer_question_of_the_week_answered__c,
-    Summer_conn_met__c,
-    Summer_conn_called__c,
-    Summer_conn_late_call__c,
-    Summer_conn_basecamp__c,
-    Summer_conn_no_answer__c,
-    Summer_conn_no_show__c,
-    Summer_conn_missed_other__c,
-    Summer_weekly_connection_other_notes__c,
-    Summer_additional_team_comments__c,
+    Mentor_Support_Request_Notes__c
 
-    Whats_been_happening__c,
-    Online_School_Update__c,
-
-    (SELECT 
-      Id, 
-      Name, 
-      Excused_Days__c, 
-      Grade__c,
-      Stamps__c, 
-      Half_Stamps__c,
-      Class__r.Name,
-      Class__r.Period__c,
-      Class__r.Teacher__r.Name,
-      Class__r.Teacher__r.LastName,
-      Class__r.School__r.Name
-    FROM PointTrackers__r) 
   FROM SynopsisReport__c 
   WHERE Id = '${reportId}'`
 );

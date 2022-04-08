@@ -12,9 +12,9 @@ import sfOauthRouter from '../router/sf-oauth-router';
 import bcOauthRouter from '../router/bc-oauth-router';
 import profileRouter from '../router/profile-router';
 import synopsisReportRouter from '../router/synopsis-report-router';
-import synopsisPdfRouter from '../router/synopsis-pdf-router';
 import synopsisSummaryRouter from '../router/synopsis-summary-router';
 import imageRouter from '../router/image-router';
+import bcUrlRouter from '../router/bc-msg-url-router';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -47,9 +47,9 @@ app.use(sfOauthRouter);
 app.use(bcOauthRouter);
 app.use(profileRouter);
 app.use(synopsisReportRouter);
-app.use(synopsisPdfRouter);
 app.use(synopsisSummaryRouter);
 app.use(imageRouter);
+app.use(bcUrlRouter);
 
 app.all('*', (request, response, next) => {
   logger.log(logger.INFO, 'returning 404 from the catch/all route');

@@ -22,7 +22,8 @@ const retrieveMentorInfo = async (sfResponse, next) => {
   }
   const ptUpdateUrl = `${sfResponse.body.instance_url}/services/data/v${process.env.SF_API_VERSION}/composite/sobjects`;
   const sobjectsUrl = idResponse.body.urls.sobjects.replace('{version}', process.env.SF_API_VERSION);
-  const queryUrl = idResponse.body.urls.query.replace('{version}', process.env.SF_API_VERSION);
+  const restUrl = idResponse.body.urls.rest.replace('{version}', process.env.SF_API_VERSION);
+  const queryUrl = idResponse.body.urls.query.replace('{version}', process.env.SF_API_VERSION).slice(0, -1); // remove trailing '/'
   const userId = idResponse.body.user_id;
   const userUrl = `${sobjectsUrl}User/${userId}`;
 
@@ -57,13 +58,12 @@ const retrieveMentorInfo = async (sfResponse, next) => {
   } else if (contactResponse.body.Mentor__c) {
     userRole = 'mentor';
   }
-
-  console.log('QUERY URL', queryUrl);
   
   const raTokenPayload = {
     accessToken,
     refreshToken,
     sobjectsUrl,
+    restUrl,
     queryUrl,
     ptUpdateUrl,
     role: userRole,
@@ -74,7 +74,6 @@ const retrieveMentorInfo = async (sfResponse, next) => {
     firstName: idResponse.body.first_name,
     lastName: idResponse.body.last_name,
   };
-
   return raTokenPayload;
 };
 
@@ -119,11 +118,10 @@ sfOAuthRouter.post('/api/v2/oauth/sf', async (request, response, next) => {
         client_id: process.env.SF_OAUTH_ID,
       });
   } catch (err) {
-    console.log('SF: Use of refresh token failed');
     return next(new HttpErrors(err.status, 'SF: Error using refresh token', { expose: false }));
   }
   
-  dumpAccessToken(JSON.stringify(refreshResponse.body.access_token, null, 2));
+  // dumpAccessToken(JSON.stringify(refreshResponse.body.access_token, null, 2));
   
   const tokenPayload = await retrieveMentorInfo(refreshResponse, next);
 
@@ -157,7 +155,7 @@ sfOAuthRouter.get('/api/v2/oauth/sf', async (request, response, next) => {
     return response.redirect(process.env.CLIENT_URL);
   }
 
-  dumpAccessToken(JSON.stringify(sfTokenResponse.body.access_token, null, 2));
+  // dumpAccessToken(JSON.stringify(sfTokenResponse.body.access_token, null, 2));
   
   const raTokenPayload = await retrieveMentorInfo(sfTokenResponse, next);
 

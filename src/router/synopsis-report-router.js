@@ -6,6 +6,28 @@ import * as soql from '../lib/sf-soql-queries';
 
 const synopsisReportRouter = new Router();
 
+synopsisReportRouter.get('/api/v2/synopsisreports/pick-lists', bearerAuthMiddleware, async (request, response, next) => {
+  if (!['mentor', 'admin'].includes(request.profile.role)) {
+    return next(new HttpErrors(403, 'SynopsisReport GET: User not authorized.'));
+  }
+
+  const { 
+    accessToken, 
+    restUrl, 
+  } = request.profile;
+
+  const pickListRequest = `ui-api/object-info/SynopsisReport__c/picklist-values/${process.env.SR_RECORD_TYPE_ID}`; 
+  let pickListResults;
+  try {
+    pickListResults = await superagent.get(`${restUrl}${pickListRequest}`)
+      .set('Authorization', `Bearer ${accessToken}`);
+  } catch (err) {
+    return next(new HttpErrors(err.status, 'Error retrieving SR picklists', { expose: false }));
+  }
+
+  return response.json(pickListResults.body).status(200);  
+});
+
 synopsisReportRouter.get('/api/v2/synopsisreports/:studentId', bearerAuthMiddleware, async (request, response, next) => {
   if (!['mentor', 'admin'].includes(request.profile.role)) {
     return next(new HttpErrors(403, 'SynopsisReport GET: User not authorized.'));
@@ -31,24 +53,6 @@ synopsisReportRouter.get('/api/v2/synopsisreports/:studentId', bearerAuthMiddlew
   return response.json(srQueryResults.body).status(200);  
 });
 
-const translateGradesToLetters = (pointTrackers) => {
-  for (let i = 0; i < pointTrackers.length; i++) {
-    if (pointTrackers[i].Grade__c === null) {
-      pointTrackers[i].Grade__c = 'N/A';
-    } else if (pointTrackers[i].Grade__c >= 90) {
-      pointTrackers[i].Grade__c = 'A';
-    } else if (pointTrackers[i].Grade__c >= 80) {
-      pointTrackers[i].Grade__c = 'B';
-    } else if (pointTrackers[i].Grade__c >= 70) {
-      pointTrackers[i].Grade__c = 'C';
-    } else if (pointTrackers[i].Grade__c >= 60) {
-      pointTrackers[i].Grade__c = 'D';
-    } else {
-      pointTrackers[i].Grade__c = 'F';
-    }
-  }
-};
-
 synopsisReportRouter.get('/api/v2/synopsisreport/:reportId', bearerAuthMiddleware, async (request, response, next) => {
   if (!['mentor', 'admin'].includes(request.profile.role)) {
     return next(new HttpErrors(403, 'SynopsisReport GET: User not authorized.'));
@@ -68,31 +72,12 @@ synopsisReportRouter.get('/api/v2/synopsisreport/:reportId', bearerAuthMiddlewar
     srQueryResults = await superagent.get(`${queryUrl}${srQuery}`)
       .set('Authorization', `Bearer ${accessToken}`);
   } catch (err) {
+    console.log(err);
     return next(new HttpErrors(err.status, `Error retrieving Synopsis Report ${request.params.reportId}`, { expose: false }));
-  }
-
-  if (srQueryResults.body.records[0].PointTrackers__r) {
-    translateGradesToLetters(srQueryResults.body.records[0].PointTrackers__r.records);
   }
 
   return response.json(srQueryResults.body).status(200);  
 });
-
-const translateLettersToGrades = (pointTracker) => {
-  if (pointTracker.Grade__c === 'N/A') {
-    pointTracker.Grade__c = null;
-  } else if (pointTracker.Grade__c === 'A') {
-    pointTracker.Grade__c = 90;
-  } else if (pointTracker.Grade__c === 'B') {
-    pointTracker.Grade__c = 80;
-  } else if (pointTracker.Grade__c === 'C') {
-    pointTracker.Grade__c = 70;
-  } else if (pointTracker.Grade__c === 'D') {
-    pointTracker.Grade__c = 60;
-  } else {
-    pointTracker.Grade__c = 0;
-  }
-};
 
 const _prepSynopsisReport = (sr) => {
   // strip out properties that will cause SF PATCH (update) request to blow up
@@ -104,22 +89,7 @@ const _prepSynopsisReport = (sr) => {
   delete newSR.Start_Date__c;
   delete newSR.Student__r;
   delete newSR.Mentor__r;
-  delete newSR.PointTrackers__r;
-  delete newSR.summer_SR;
   return newSR;
-};
-
-const _prepPointTrackers = (sr) => {
-  // prep point trackers array for use as update request body
-  const pt = {};
-  pt.allOrNone = false;
-  pt.records = sr.PointTrackers__r.records.map((p) => {
-    delete p.Class__r;
-    delete p.Name;
-    translateLettersToGrades(p);
-    return p;
-  });
-  return pt;
 };
 
 synopsisReportRouter.put('/api/v2/synopsisreport', bearerAuthMiddleware, async (request, response, next) => {
@@ -133,15 +103,13 @@ synopsisReportRouter.put('/api/v2/synopsisreport', bearerAuthMiddleware, async (
   const {
     accessToken,
     sobjectsUrl,
-    ptUpdateUrl,
   } = request.profile;
 
   const synopsisReport = request.body;
 
   const srId = synopsisReport.Id;
-  const srName = synopsisReport.Name;
-  // console.log('before prepSR', JSON.stringify(synopsisReport.PointTrackers__r));
   const preppedSR = _prepSynopsisReport(synopsisReport); // prepair SynopsisReport__c for update
+
   try {
     await superagent.patch(`${sobjectsUrl}SynopsisReport__c/${srId}`)
       .set('Authorization', `Bearer ${accessToken}`)
@@ -150,22 +118,7 @@ synopsisReportRouter.put('/api/v2/synopsisreport', bearerAuthMiddleware, async (
     console.log('error', JSON.stringify(err, null, 2));
     return next(new HttpErrors(err.status, `Error Updating Synopsis Report ${request.body.Id}`, { expose: false }));
   }
-  if (!synopsisReport.summer_SR) {
-    const preppedPT = _prepPointTrackers(synopsisReport);
-    let ptResult;
-    try {
-      ptResult = await superagent.patch(ptUpdateUrl)
-        .set('Authorization', `Bearer ${accessToken}`)
-        .send(preppedPT);
-    } catch (err) {
-      return next(new HttpErrors(err.status, `Error Updating Point Trackers for SR ${srName}`, { expose: false }));
-    }
 
-    if (ptResult.body.every(r => r.success)) {
-      return response.sendStatus(204);
-    }
-    return next(new HttpErrors(500, `Failure saving point trackers for SR ${srName}`, { expose: false }));
-  }
   return response.sendStatus(204);
 });
 

@@ -11,7 +11,7 @@ const bcOAuthRouter = new Router();
 const retrieveBasecampInfo = async (bcResponse, next) => {
   const accessToken = bcResponse.body.access_token;
   const refreshToken = bcResponse.body.refresh_token;
-
+  
   // we have credentials now. Need to drill down to user's Contact record to verify their role(s).
   // first, use id url to retrieve their user_id and sobjects url
   const authorizationsUrl = 'https://launchpad.37signals.com/authorization.json';
@@ -23,19 +23,24 @@ const retrieveBasecampInfo = async (bcResponse, next) => {
   } catch (err) {
     return next(new HttpErrors(err.status, `BC: Error retrieving info from ${authorizationsUrl}`, { expose: false }));
   }
-
+  const mentorEmail = authResponse.body.identity.email_address.toLowerCase().trim();
   const raAccount = authResponse.body.accounts.find(a => a.name.trim() === 'Rainier Athletes') || {};
   const raTokenPayload = {
     accessToken,
     refreshToken,
     accountUrl: raAccount.href,
+    mentorEmail,
   };
-
+  
   return raTokenPayload;
 };
 
 const sendCookieResponse = (response, tokenPayload) => {
-  const raToken = jsonWebToken.sign({ accessToken: tokenPayload.accessToken, accountUrl: tokenPayload.accountUrl }, process.env.SECRET);
+  const raToken = jsonWebToken.sign({
+    accessToken: tokenPayload.accessToken,
+    accountUrl: tokenPayload.accountUrl,
+    mentorEmail: tokenPayload.mentorEmail,
+  }, process.env.SECRET);
   const firstDot = process.env.CLIENT_URL.indexOf('.');
   const domain = firstDot > 0 ? process.env.CLIENT_URL.slice(firstDot) : null;
   const cookieOptions = { maxAge: 14 * 24 * 60 * 60 * 1000 }; // two weeks
@@ -77,7 +82,7 @@ bcOAuthRouter.post('/api/v2/oauth/bc', async (request, response, next) => {
     return next(new HttpErrors(err.status, 'BC: Error using refresh token', { expose: false }));
   }
 
-  dumpAccessToken(refreshResponse.body.access_token, 'REFRESH');
+  // dumpAccessToken(refreshResponse.body.access_token, 'REFRESH');
 
   const tokenPayload = await retrieveBasecampInfo(refreshResponse, next);
 
@@ -112,7 +117,7 @@ bcOAuthRouter.get('/api/v2/oauth/bc', async (request, response, next) => {
     return response.redirect(process.env.CLIENT_URL);
   }
 
-  dumpAccessToken(bcTokenResponse.body.access_token, 'LOG IN');
+  // dumpAccessToken(bcTokenResponse.body.access_token, 'LOG IN');
   
   const raTokenPayload = await retrieveBasecampInfo(bcTokenResponse, next);
 
