@@ -3,6 +3,10 @@
   "version": "2.0.0",
   "description": "Mentor Portal backend interfacing to Salesforce database",
   "main": "index.js",
+  "engines": {
+    "node": "12.x",
+    "npm": "6.x"
+  },
   "scripts": {
     "build": "babel src -d build",
     "test": "eslint . --fix && jest --coverage --detectOpenHandles --forceExit --runInBand",
