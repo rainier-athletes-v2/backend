@@ -136,8 +136,10 @@ bcUrlRouter.get('/api/v2/bc-projects', timeout(25000), bearerAuthMiddleware, asy
   }));
   if (request.mentorEmail.toLowerCase().trim() === logMentorEmail) {
     console.log('>>>>>>> rawProjects:', rawProjects);
+    console.log('>>>>>>> returning reducedProjects:', reducedProjects);
   }
   logger.log(logger.INFO, `Returning ${reducedProjects.length} projects for mentor ${request.mentorEmail}`);
+  
   return response.send({ projects: reducedProjects }).status(200);
 });
 
@@ -165,7 +167,7 @@ bcUrlRouter.get('/api/v2/bc-project-scan', timeout(25000), bearerAuthMiddleware,
   const { accessToken } = jsonWebToken.verify(basecampToken, process.env.SECRET);
 
   const people = await fetchProjectPeople(project, accessToken, next);
-  console.log('>>>>>> people', people);
+
   let menteeFound = false;
   for (let p = 0; p < people.length; p++) {
     if (people[p].email_address.toLowerCase().trim() === studentEmail.toLowerCase().trim()) {
