@@ -129,7 +129,7 @@ bcUrlRouter.get('/api/v2/bc-projects', timeout(25000), bearerAuthMiddleware, asy
     console.log('>>>>>>> accessToken"', request.accessToken);
   }
   const rawProjects = await fetchAllProjects(projectsUrl, request.accessToken, next);
-  const reducedProjects = rawProjects.map(p => ({
+  const reducedProjects = rawProjects.filter(p => p.name.toLowerCase().includes('team')).map(p => ({
     name: p.name,
     url: p.url,
     msgUrl: p.dock.find(d => d.name === 'message_board').url.replace('.json', '/messages.json') || null,
