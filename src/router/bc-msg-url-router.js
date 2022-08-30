@@ -122,22 +122,21 @@ bcUrlRouter.get('/api/v2/bc-projects', timeout(25000), bearerAuthMiddleware, asy
 
   const raAccount = await fetchRaAccount(request, next);
   const projectsUrl = `${raAccount.href}/projects.json`;
-  // if (request.mentorEmail === logMentorEmail) {
-    // console.log(`>>>>>>> ${logMentorEmail} diagnostics <<<<<<<<<<`);
-    // console.log('>>>>>>> raAccount:', raAccount);
-    // console.log('>>>>>>> projectsUrl:', projectsUrl);
-    // console.log('>>>>>>> accessToken"', request.accessToken);
-  // }
+  if (request.mentorEmail === logMentorEmail) {
+    console.log(`>>>>>>> ${logMentorEmail} diagnostics <<<<<<<<<<`);
+    console.log('>>>>>>> raAccount:', raAccount);
+    console.log('>>>>>>> projectsUrl:', projectsUrl);
+    console.log('>>>>>>> accessToken"', request.accessToken);
+  }
   const rawProjects = await fetchAllProjects(projectsUrl, request.accessToken, next);
   const reducedProjects = rawProjects.filter(p => p.name.toLowerCase().includes('team')).map(p => ({
     name: p.name,
     url: p.url,
     msgUrl: p.dock.find(d => d.name === 'message_board').url.replace('.json', '/messages.json') || null,
   }));
-  // if (request.mentorEmail.toLowerCase().trim() === logMentorEmail) {
-    // console.log('>>>>>>> rawProjects:', rawProjects);
-    console.log('>>>>>>> returning reducedProjects:', reducedProjects);
-  // }
+  if (request.mentorEmail.toLowerCase().trim() === logMentorEmail) {
+    console.log('>>>>>>> rawProjects:', rawProjects);
+  }
   logger.log(logger.INFO, `Returning ${reducedProjects.length} projects for mentor ${request.mentorEmail}`);
   return response.send({ projects: reducedProjects }).status(200);
 });
