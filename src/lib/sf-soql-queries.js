@@ -125,8 +125,8 @@ export const thisSynopsisReport = reportId => (
     Summer_additional_team_comments__c,
     Whats_been_happening__c,
 
-    Sports_Update__c,
-    Weekly_Sports_Update__c,
+    Weekly_Sports_and_Activities_Update__c,
+    Sports_and_Activities_Update__c,
     Additional_Comments__c,
 
     Mentor_Support_Request__c,
