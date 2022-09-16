@@ -102,13 +102,12 @@ const fetchRaAccount = async (request, next) => {
   return raAccount;
 };
 
-const logMentorEmail = 'DISABLED';
+const logMentorEmails = ['george@rainierathletes.org', 'raquel@rainierathletes.org', 'peter@rainierathletes.org'];
+
+const logableEmail = email => logMentorEmails.includes(email.trim().toLowerCase());
 
 // return all mentor basecamp projects
 bcUrlRouter.get('/api/v2/bc-projects', timeout(25000), bearerAuthMiddleware, async (request, response, next) => {
-  // request.query = {
-  //   basecampToken
-  // }
   if (!request.query) {
     return next(new HttpErrors(403, 'BC Projects: Missing request query', { expose: false }));
   }
@@ -122,8 +121,8 @@ bcUrlRouter.get('/api/v2/bc-projects', timeout(25000), bearerAuthMiddleware, asy
 
   const raAccount = await fetchRaAccount(request, next);
   const projectsUrl = `${raAccount.href}/projects.json`;
-  if (request.mentorEmail === logMentorEmail) {
-    console.log(`>>>>>>> ${logMentorEmail} diagnostics <<<<<<<<<<`);
+  if (logableEmail(request.mentorEmail)) {
+    console.log(`>>>>>>> ${request.mentorEmail} diagnostics <<<<<<<<<<`);
     console.log('>>>>>>> raAccount:', raAccount);
     console.log('>>>>>>> projectsUrl:', projectsUrl);
     console.log('>>>>>>> accessToken"', request.accessToken);
@@ -134,7 +133,7 @@ bcUrlRouter.get('/api/v2/bc-projects', timeout(25000), bearerAuthMiddleware, asy
     url: p.url,
     msgUrl: p.dock.find(d => d.name === 'message_board').url.replace('.json', '/messages.json') || null,
   }));
-  if (request.mentorEmail.toLowerCase().trim() === logMentorEmail) {
+  if (logableEmail(request.mentorEmail)) {
     console.log('>>>>>>> rawProjects:', rawProjects);
     console.log('>>>>>>> returning reducedProjects:', reducedProjects);
   }
@@ -145,9 +144,6 @@ bcUrlRouter.get('/api/v2/bc-projects', timeout(25000), bearerAuthMiddleware, asy
 
 // fetch people associated with project for student email
 bcUrlRouter.get('/api/v2/bc-project-scan', timeout(25000), bearerAuthMiddleware, async (request, response, next) => {
-  // request.query = {
-  //   project, studentEmail, basecampToken
-  // }
   if (!request.query) {
     return next(new HttpErrors(403, 'BC Project Scan: Missing request query', { expose: false }));
   }
@@ -169,6 +165,10 @@ bcUrlRouter.get('/api/v2/bc-project-scan', timeout(25000), bearerAuthMiddleware,
   const people = await fetchProjectPeople(project, accessToken, next);
 
   let menteeFound = false;
+  if (logableEmail(request.mentorEmail)) {
+    console.log('>>>>>>> student email address', studentEmail.toLowerCase().trim());
+    console.log('>>>>>>> emails from all mentors project people', people.map(p => p.email_address.toLowerCase().trim()));
+  }
   for (let p = 0; p < people.length; p++) {
     if (people[p].email_address.toLowerCase().trim() === studentEmail.toLowerCase().trim()) {
       menteeFound = true;
