@@ -102,10 +102,15 @@ const fetchRaAccount = async (request, next) => {
   return raAccount;
 };
 
-// const logMentorEmails = ['george@rainierathletes.org', 'raquel@rainierathletes.org', 'peter@rainierathletes.org'];
-const logMentorEmails = ['selpilot@gmail.com'];
+const logMentorEmails = ['george@rainierathletes.org', 'raquel@rainierathletes.org', 'peter@rainierathletes.org'];
+// const logMentorEmails = ['selpilot@gmail.com'];
+// const logMentorEmails = [];
 
-const logableEmail = email => logMentorEmails.includes(email.trim().toLowerCase());
+let logableEmailFlag = false;
+const logableEmail = (email) => {
+  logableEmailFlag = email ? logMentorEmails.includes(email.trim().toLowerCase()) : false;
+  return logableEmailFlag;
+};
 
 // return all mentor basecamp projects
 bcUrlRouter.get('/api/v2/bc-projects', timeout(25000), bearerAuthMiddleware, async (request, response, next) => {
@@ -135,7 +140,9 @@ bcUrlRouter.get('/api/v2/bc-projects', timeout(25000), bearerAuthMiddleware, asy
     msgUrl: p.dock.find(d => d.name === 'message_board').url.replace('.json', '/messages.json') || null,
   }));
   if (logableEmail(request.mentorEmail)) {
-    console.log('>>>>>>> rawProjects:', rawProjects);
+    console.log('>>>>>>> rawProjects (name, description):', rawProjects.map((p) => { 
+      return { name: p.name, description: p.description, purpose: p.purpose };
+    }));
     console.log('>>>>>>> returning reducedProjects:', reducedProjects);
   }
   logger.log(logger.INFO, `Returning ${reducedProjects.length} projects for mentor ${request.mentorEmail}`);
@@ -163,12 +170,16 @@ bcUrlRouter.get('/api/v2/bc-project-scan', timeout(25000), bearerAuthMiddleware,
   const { studentEmail, basecampToken } = request.query;
   const { accessToken } = jsonWebToken.verify(basecampToken, process.env.SECRET);
 
+  if (logableEmailFlag) {
+    console.log('>>>>>>> scan project for people. studentEmail:', studentEmail);
+    console.log('>>>>>>> project', project);
+  }
+
   const people = await fetchProjectPeople(project, accessToken, next);
 
   let menteeFound = false;
-  if (logableEmail(request.mentorEmail)) {
-    console.log('>>>>>>> student email address', studentEmail.toLowerCase().trim());
-    console.log('>>>>>>> emails from all mentors project people', people.map(p => p.email_address.toLowerCase().trim()));
+  if (logableEmailFlag) {
+    console.log('>>>>>>> emails from all  project people', people.map(p => p.email_address.toLowerCase().trim()));
   }
   for (let p = 0; p < people.length; p++) {
     if (people[p].email_address.toLowerCase().trim() === studentEmail.toLowerCase().trim()) {
