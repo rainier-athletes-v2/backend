@@ -102,7 +102,8 @@ const fetchRaAccount = async (request, next) => {
   return raAccount;
 };
 
-const logMentorEmails = ['george@rainierathletes.org', 'raquel@rainierathletes.org', 'peter@rainierathletes.org'];
+// const logMentorEmails = ['george@rainierathletes.org', 'raquel@rainierathletes.org', 'peter@rainierathletes.org'];
+const logMentorEmails = ['selpilot@gmail.com'];
 
 const logableEmail = email => logMentorEmails.includes(email.trim().toLowerCase());
 
