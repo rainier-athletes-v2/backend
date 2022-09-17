@@ -145,7 +145,6 @@ bcUrlRouter.get('/api/v2/bc-projects', timeout(25000), bearerAuthMiddleware, asy
         name: p.name,
         description: p.description,
         purpose: p.purpose,
-        dock: p.dock,
         dock_message_board_count: p.dock.filter(pr => pr.name === 'message_board').length,
       };
     }));
