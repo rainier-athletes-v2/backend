@@ -102,7 +102,7 @@ const fetchRaAccount = async (request, next) => {
   return raAccount;
 };
 
-const logMentorEmails = ['george@rainierathletes.org', 'raquel@rainierathletes.org', 'peter@rainierathletes.org'];
+const logMentorEmails = ['george@rainierathletes.org', 'raquel@rainierathletes.org', 'peter@rainierathletes.org', 'selpilot@gmail.com'];
 // const logMentorEmails = ['selpilot@gmail.com'];
 // const logMentorEmails = [];
 
@@ -140,10 +140,16 @@ bcUrlRouter.get('/api/v2/bc-projects', timeout(25000), bearerAuthMiddleware, asy
     msgUrl: p.dock.find(d => d.name === 'message_board').url.replace('.json', '/messages.json') || null,
   }));
   if (logableEmail(request.mentorEmail)) {
-    console.log('>>>>>>> rawProjects (name, description):', rawProjects.map((p) => { 
-      return { name: p.name, description: p.description, purpose: p.purpose };
+    console.log('>>>>>>> rawProjects (simplified):', rawProjects.map((p) => {
+      return {
+        name: p.name,
+        description: p.description,
+        purpose: p.purpose,
+        dock: p.dock,
+        dock_message_board_count: p.dock.filter(pr => pr.name === 'message_board').length,
+      };
     }));
-    console.log('>>>>>>> returning reducedProjects:', reducedProjects);
+    console.log('>>>>>>> actually returning these "reducedProjects":', reducedProjects);
   }
   logger.log(logger.INFO, `Returning ${reducedProjects.length} projects for mentor ${request.mentorEmail}`);
   
