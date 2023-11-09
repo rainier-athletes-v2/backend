@@ -26,7 +26,7 @@ export const myStudents = mentorId => (
       Class__r.School__r.Name
     FROM PointTrackers__r order by CreatedDate DESC LIMIT 1)
   FROM SynopsisReport__c 
-  WHERE SynopsisReport__c.Start_Date__c >= N_DAYS_AGO:30 
+  WHERE SynopsisReport__c.Start_Date__c >= N_DAYS_AGO:10 
     AND SynopsisReport__c.Mentor__r.Id = '${mentorId}'`
 );
 
